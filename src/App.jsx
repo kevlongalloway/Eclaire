@@ -19,6 +19,7 @@ const PRODUCTS = [
     metal: "925 Sterling Silver",
     weight: "18.4g",
     length: '20"',
+    width: "3mm",
     tag: "Bestseller",
     desc: "A tightly woven rope that throws light in every direction. Substantial on the skin, quietly assured.",
     swatch: "#C8CCD2",
@@ -31,6 +32,7 @@ const PRODUCTS = [
     metal: "925 Sterling Silver",
     weight: "26.1g",
     length: '22"',
+    width: "5mm",
     tag: "New",
     desc: "Hand-polished interlocking links with real heft. The piece that anchors a wardrobe.",
     swatch: "#B9BEC6",
@@ -43,6 +45,7 @@ const PRODUCTS = [
     metal: "925 Sterling Silver",
     weight: "11.2g",
     length: '18"',
+    width: "2mm",
     tag: null,
     desc: "Clean geometric links that sit flat and catch a sharp, architectural glint.",
     swatch: "#CDD2D8",
@@ -55,6 +58,7 @@ const PRODUCTS = [
     metal: "925 Sterling Silver",
     weight: "15.8g",
     length: '20"',
+    width: "4mm",
     tag: null,
     desc: "The rhythm of alternating links — a timeless pattern, weighted for the everyday.",
     swatch: "#C2C7CE",
@@ -67,6 +71,7 @@ const PRODUCTS = [
     metal: "925 Sterling Silver",
     weight: "9.6g",
     length: '18"',
+    width: "2mm",
     tag: null,
     desc: "Liquid-smooth and fluid, it moves like mercury and reads as pure light.",
     swatch: "#D1D5DA",
@@ -79,6 +84,7 @@ const PRODUCTS = [
     metal: "925 Sterling Silver",
     weight: "21.0g",
     length: '22"',
+    width: "4mm",
     tag: "Bestseller",
     desc: "Flattened, twisted links polished to a mirror. Bold without ever shouting.",
     swatch: "#BEC3CB",
@@ -375,9 +381,11 @@ function Story() {
 /* ---------------------------- PRODUCT DRAWER ------------------------------ */
 function ProductModal({ product, onClose, onAdd }) {
   const [len, setLen] = useState(product?.length);
-  useEffect(() => { setLen(product?.length); }, [product]);
+  const [width, setWidth] = useState(product?.width);
+  useEffect(() => { setLen(product?.length); setWidth(product?.width); }, [product]);
   if (!product) return null;
   const lengths = ['18"', '20"', '22"'];
+  const widths = ["2mm", "3mm", "4mm", "5mm"];
   return (
     <div className="ec-overlay" onClick={onClose}>
       <div className="ec-modal" onClick={(e) => e.stopPropagation()}>
@@ -402,7 +410,15 @@ function ProductModal({ product, onClose, onAdd }) {
               ))}
             </div>
           </div>
-          <button className="ec-btn ec-btn-dark ec-full" onClick={() => { onAdd({ ...product, length: len }); onClose(); }}>
+          <div className="ec-len">
+            <span className="ec-len-label">Width</span>
+            <div className="ec-len-opts">
+              {widths.map((w) => (
+                <button key={w} className={`ec-len-opt ${width === w ? "is-on" : ""}`} onClick={() => setWidth(w)}>{w}</button>
+              ))}
+            </div>
+          </div>
+          <button className="ec-btn ec-btn-dark ec-full" onClick={() => { onAdd({ ...product, length: len, width }); onClose(); }}>
             Add to bag · ${product.price}
           </button>
           <p className="ec-modal-note">Ships in recyclable Éclaire packaging · 30-day returns</p>
@@ -439,7 +455,7 @@ function Cart({ open, items, onClose, onQty, onRemove }) {
                       <h4>{it.name}</h4>
                       <button className="ec-cart-remove" onClick={() => onRemove(it.key)} aria-label="Remove"><Icon.Close width="15" height="15" /></button>
                     </div>
-                    <p className="ec-cart-sub">{it.length} · {it.metal}</p>
+                    <p className="ec-cart-sub">{it.length} · {it.width} · {it.metal}</p>
                     <div className="ec-cart-bottomrow">
                       <div className="ec-qty">
                         <button onClick={() => onQty(it.key, -1)} aria-label="Decrease"><Icon.Minus width="15" height="15" /></button>
@@ -579,7 +595,7 @@ export default function App() {
   });
 
   const addToCart = useCallback((product) => {
-    const key = `${product.id}-${product.length}`;
+    const key = `${product.id}-${product.length}-${product.width}`;
     setCart((c) => {
       const existing = c.find((i) => i.key === key);
       if (existing) return c.map((i) => (i.key === key ? { ...i, qty: i.qty + 1 } : i));
