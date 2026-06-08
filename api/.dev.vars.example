@@ -1,0 +1,11 @@
+# Local secrets for `wrangler dev`. Copy to `.dev.vars` (gitignored).
+# In production set these with `wrangler secret put <NAME>`.
+
+# Shared secret guarding every /admin/* route. Send it from the admin portal as
+#   Authorization: Bearer <ADMIN_API_KEY>   (or  X-Admin-Key: <ADMIN_API_KEY>)
+ADMIN_API_KEY=dev-admin-key-change-me
+
+# Stripe — required for live checkout + order webhooks. Leave blank to disable
+# checkout (the storefront then stays in demo mode).
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
