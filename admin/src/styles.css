@@ -70,8 +70,25 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; colo
 .ad-nav-link:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
 .ad-nav-link.is-active { background: rgba(176, 141, 87, 0.18); color: #fff; }
 .ad-nav-link.is-active svg { color: var(--gold); }
-.ad-logout { margin-top: auto; color: #97968f; }
+.ad-sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: 0.25rem; }
+.ad-account { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.7rem; margin-bottom: 0.3rem; }
+.ad-account-avatar {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--gold); color: #1a1c22;
+  display: grid; place-items: center; font-size: 0.82rem; font-weight: 700; flex-shrink: 0;
+}
+.ad-account-name { font-size: 0.86rem; font-weight: 500; color: #e9e8e3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-logout { color: #97968f; }
 .ad-logout:hover { background: rgba(255, 90, 80, 0.12); color: #ffb4ae; }
+
+.ad-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  background: var(--amber-soft); color: var(--amber); border-bottom: 1px solid rgba(154, 107, 22, 0.25);
+  padding: 0.7rem clamp(1.2rem, 3vw, 2.6rem); font-size: 0.86rem; font-weight: 500;
+}
+.ad-notice-block {
+  background: var(--amber-soft); color: var(--amber); border-radius: 8px; padding: 0.7rem 0.9rem;
+  font-size: 0.85rem; line-height: 1.5; margin: 0 0 1rem;
+}
 
 .ad-main { min-width: 0; }
 
@@ -258,6 +275,7 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; colo
   .ad-shell { grid-template-columns: 1fr; }
   .ad-sidebar { position: static; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap; }
   .ad-nav { flex-direction: row; flex: 1; }
-  .ad-logout { margin: 0; }
+  .ad-sidebar-foot { margin: 0; flex-direction: row; align-items: center; }
+  .ad-account { margin: 0; }
   .ad-grid-2, .ad-order-cols { grid-template-columns: 1fr; }
 }

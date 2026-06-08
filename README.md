@@ -31,14 +31,15 @@ deployment steps.
 ### `admin/` — admin portal
 The internal dashboard (React + Vite): an **overview** (revenue, orders, units,
 unfulfilled count, charts), **products** (create / edit / delete, image upload),
-and **orders** (status, fulfillment, tracking). Sign-in uses the API worker's
-`ADMIN_API_KEY` — there is no separate user database. Deploys as a static site
-behind your own access controls. See [`admin/README.md`](admin/README.md).
+and **orders** (status, fulfillment, tracking). Sign-in uses a username/password
+(the API worker's `ADMIN_USERNAME` / `ADMIN_PASSWORD` secrets); the password can
+be changed from the portal after launch. Deploys as a static site behind your
+own access controls. See [`admin/README.md`](admin/README.md).
 
 ## How they connect
 
 ```
-            VITE_API_BASE                     Bearer ADMIN_API_KEY
+            VITE_API_BASE                  username/password → token
 storefront ───────────────▶  api (Workers)  ◀───────────────────  admin
                               │   │
                          D1 ◀─┘   └─▶ R2          Stripe ◀─▶ /checkout, /webhooks

@@ -1,39 +1,68 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { api, setToken, setUnauthorizedHandler } from "./api";
 
-const STORAGE_KEY = "eclaire_admin_key";
+const TOKEN_KEY = "eclaire_admin_token";
+const USER_KEY = "eclaire_admin_user";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // Held in sessionStorage so it clears when the tab/browser closes.
-  const [key, setKey] = useState(() => sessionStorage.getItem(STORAGE_KEY) || null);
+  // Session token + username held in sessionStorage (clears when the tab closes).
+  const [token, setTok] = useState(() => sessionStorage.getItem(TOKEN_KEY) || null);
+  const [username, setUsername] = useState(() => sessionStorage.getItem(USER_KEY) || "");
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
-  // Keep the api client's token in sync, and log out on any 401.
+  // Keep the api client's token in sync.
   useEffect(() => {
-    setToken(key);
-  }, [key]);
+    setToken(token);
+  }, [token]);
 
+  // Any 401 from the API logs us out locally.
   useEffect(() => {
-    setUnauthorizedHandler(() => logout());
+    setUnauthorizedHandler(() => clearSession());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function login(candidate) {
-    const trimmed = (candidate || "").trim();
-    if (!trimmed) throw new Error("Enter your admin key.");
-    const valid = await api.verifyKey(trimmed);
-    if (!valid) throw new Error("That admin key is incorrect.");
-    sessionStorage.setItem(STORAGE_KEY, trimmed);
-    setKey(trimmed); // the effect syncs the api client token
-  }
-
-  function logout() {
-    sessionStorage.removeItem(STORAGE_KEY);
+  function clearSession() {
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(USER_KEY);
     setToken(null);
-    setKey(null);
+    setTok(null);
+    setUsername("");
+    setMustChangePassword(false);
   }
 
-  const value = useMemo(() => ({ key, isAuthed: Boolean(key), login, logout }), [key]);
+  async function login(user, password) {
+    if (!user?.trim() || !password) throw new Error("Enter your username and password.");
+    const data = await api.login(user.trim(), password);
+    sessionStorage.setItem(TOKEN_KEY, data.token);
+    sessionStorage.setItem(USER_KEY, data.username || user.trim());
+    setToken(data.token);
+    setTok(data.token);
+    setUsername(data.username || user.trim());
+    setMustChangePassword(Boolean(data.mustChangePassword));
+  }
+
+  async function logout() {
+    try {
+      await api.logout();
+    } catch {
+      // ignore — we clear locally regardless
+    }
+    clearSession();
+  }
+
+  const value = useMemo(
+    () => ({
+      token,
+      username,
+      isAuthed: Boolean(token),
+      mustChangePassword,
+      dismissPasswordPrompt: () => setMustChangePassword(false),
+      login,
+      logout,
+    }),
+    [token, username, mustChangePassword],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

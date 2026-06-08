@@ -18,18 +18,27 @@ stack and deploys the same way (a static site), but behind a login.
 
 ## Login
 
-There is no user database. You sign in with the **admin key**, which must match
-the `ADMIN_API_KEY` secret configured on the API worker in Cloudflare:
+You sign in with a **username and password**. The credentials are configured as
+secrets on the API worker in Cloudflare (Workers › Settings › Variables and
+Secrets, or via the CLI):
 
 ```bash
 # on the api/ project:
-wrangler secret put ADMIN_API_KEY
+wrangler secret put ADMIN_USERNAME
+wrangler secret put ADMIN_PASSWORD
 ```
 
-The key is verified against the API (`GET /admin/auth/check`) and held in
-`sessionStorage` (cleared when the tab closes). It is sent as
-`Authorization: Bearer <key>` on every request — it is **never** baked into the
-build. Add the portal's deployed origin to the API's `CORS_ORIGINS`.
+Login (`POST /admin/auth/login`) returns an opaque **session token**, held in
+`sessionStorage` (cleared when the tab closes) and sent as
+`Authorization: Bearer <token>` on every request — credentials are **never**
+baked into the build. Add the portal's deployed origin to the API's
+`CORS_ORIGINS`.
+
+**Changing the password:** the `ADMIN_PASSWORD` secret is only the *initial*
+password. Use **Change password** in the sidebar to set a new one — it's stored
+(hashed) in D1, takes precedence over the secret, and signs out every other
+session. While still on the default password, the portal nudges you to change
+it.
 
 ## Local development
 
@@ -42,8 +51,8 @@ npm run preview            # preview the build
 ```
 
 Run the API locally (see [`../api/README.md`](../api/README.md)) and point
-`VITE_API_BASE` at `http://localhost:8787`. Sign in with the `ADMIN_API_KEY`
-from the API's `.dev.vars`.
+`VITE_API_BASE` at `http://localhost:8787`. Sign in with the `ADMIN_USERNAME`
+and `ADMIN_PASSWORD` from the API's `.dev.vars`.
 
 ## Deploy
 
@@ -63,7 +72,7 @@ See [`../api/README.md`](../api/README.md) for the full reference.
 
 | Area | Endpoints |
 |---|---|
-| **Auth** | `GET /admin/auth/check` |
+| **Auth** | `POST /admin/auth/login`, `GET /admin/auth/check`, `POST /admin/auth/logout`, `POST /admin/auth/password` |
 | **Overview** | `GET /admin/stats` |
 | **Products** | `GET/POST /admin/products`, `GET/PATCH/DELETE /admin/products/:id` |
 | **Images** | `POST /admin/images` |
@@ -79,9 +88,9 @@ admin/
 └── src/
     ├── main.jsx             # bootstrap (router + auth provider)
     ├── App.jsx              # routes + auth gate
-    ├── auth.jsx             # admin-key session auth
+    ├── auth.jsx             # username/password session auth
     ├── api.js               # admin API client + money/date helpers
     ├── styles.css
-    ├── components/          # Layout, Login, Modal, ProductForm
+    ├── components/          # Layout, Login, Modal, ProductForm, ChangePassword
     └── pages/               # Overview, Products, Orders
 ```

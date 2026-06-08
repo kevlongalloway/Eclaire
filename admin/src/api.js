@@ -52,13 +52,37 @@ async function request(path, opts = {}) {
 }
 
 export const api = {
-  /* Validate an admin key without storing it (used by the login screen). */
-  async verifyKey(key) {
-    const res = await fetch(`${BASE}/admin/auth/check`, {
-      headers: { Authorization: `Bearer ${key}` },
+  /* Auth — username/password login returns a session token. Uses a direct
+     fetch so a 401 (bad credentials) doesn't trip the global logout handler. */
+  async login(username, password) {
+    const res = await fetch(`${BASE}/admin/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
     });
-    return res.ok;
+    let body = null;
+    try {
+      body = await res.json();
+    } catch {
+      throw new Error(`Unexpected response from server (HTTP ${res.status})`);
+    }
+    if (!body || body.ok !== true) {
+      throw new Error((body && body.error) || "Sign in failed.");
+    }
+    return body.data; // { token, username, expiresAt, mustChangePassword }
   },
+
+  /* Confirm the current session and report whether the password is still the
+     bootstrap default. */
+  check: () => request(`/admin/auth/check`),
+
+  logout: () => request(`/admin/auth/logout`, { method: "POST" }),
+
+  changePassword: (currentPassword, newPassword) =>
+    request(`/admin/auth/password`, {
+      method: "POST",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
 
   /* Overview */
   getStats: () => request(`/admin/stats`),

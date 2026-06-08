@@ -3,7 +3,8 @@ import { useAuth } from "../auth.jsx";
 
 export default function Login() {
   const { login } = useAuth();
-  const [key, setKey] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -12,7 +13,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await login(key);
+      await login(username, password);
     } catch (err) {
       setError(err.message || "Sign in failed.");
     } finally {
@@ -28,26 +29,38 @@ export default function Login() {
           <span>Éclaire</span>
         </div>
         <h1>Admin sign in</h1>
-        <p className="ad-login-sub">
-          Enter the admin key configured on the API worker.
-        </p>
+        <p className="ad-login-sub">Sign in with your admin credentials.</p>
 
         <label className="ad-field">
-          <span>Admin key</span>
+          <span>Username</span>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="admin"
+            autoFocus
+            autoComplete="username"
+          />
+        </label>
+
+        <label className="ad-field">
+          <span>Password</span>
           <input
             type="password"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••••••"
-            autoFocus
             autoComplete="current-password"
           />
         </label>
 
         {error && <p className="ad-form-error">{error}</p>}
 
-        <button className="ad-btn ad-btn-primary ad-btn-block" disabled={loading || !key.trim()}>
-          {loading ? "Verifying…" : "Sign in"}
+        <button
+          className="ad-btn ad-btn-primary ad-btn-block"
+          disabled={loading || !username.trim() || !password}
+        >
+          {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
     </div>

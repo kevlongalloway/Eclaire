@@ -33,11 +33,28 @@ Money is always an **integer in the smallest currency unit** (cents).
 | `GET`  | `/orders?session_id=` | Order created by the Stripe webhook (404 until it fires — the storefront polls). |
 | `POST` | `/webhooks/stripe` | Stripe webhook (verified). Creates the order on `checkout.session.completed`. |
 
-### Admin (require `Authorization: Bearer <ADMIN_API_KEY>` or `X-Admin-Key`)
+### Admin auth (username + password)
+
+Admins sign in with a username/password; the API issues an opaque **session
+token** sent on every other admin request as `Authorization: Bearer <token>`.
+
+- The **username** is the `ADMIN_USERNAME` secret.
+- The **password** is bootstrapped from the `ADMIN_PASSWORD` secret. Once changed
+  in-app it's stored (PBKDF2-hashed) in D1 and takes precedence — a Worker can't
+  rewrite its own secrets at runtime. Changing the password revokes all other
+  sessions.
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/admin/auth/login` | — | `{ username, password }` → `{ token, username, expiresAt, mustChangePassword }`. |
+| `GET`  | `/admin/auth/check` | token | Confirm the session; reports `mustChangePassword`. |
+| `POST` | `/admin/auth/logout` | token | Revoke the current session. |
+| `POST` | `/admin/auth/password` | token | `{ currentPassword, newPassword }` → set a new password (revokes other sessions). |
+
+### Admin (require `Authorization: Bearer <session-token>`)
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/admin/auth/check` | Returns 200 only when the admin key is valid (login check). |
 | `GET` | `/admin/stats` | Overview aggregates: revenue, orders, units, product counts, 14-day series, recent orders. |
 | `GET` | `/admin/products?q=&limit=&offset=` | List all products (incl. inactive). |
 | `POST` | `/admin/products` | Create a product. |
@@ -76,7 +93,7 @@ Money is always an **integer in the smallest currency unit** (cents).
 
 ```bash
 npm install
-cp .dev.vars.example .dev.vars          # set ADMIN_API_KEY (+ Stripe keys for checkout)
+cp .dev.vars.example .dev.vars          # set ADMIN_USERNAME / ADMIN_PASSWORD (+ Stripe keys)
 
 npm run db:migrate:local                # apply migrations to the local D1
 npm run db:seed:local                   # optional sample catalog
@@ -87,8 +104,14 @@ Quick check:
 
 ```bash
 curl http://localhost:8787/products
+
+# Sign in, then use the returned token for admin calls.
+TOKEN=$(curl -s -X POST http://localhost:8787/admin/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"change-me-please"}' | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+
 curl -X POST http://localhost:8787/admin/products \
-  -H "Authorization: Bearer $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"name":"New Chain","price":12900,"stock":10}'
 ```
 
@@ -102,9 +125,11 @@ curl -X POST http://localhost:8787/admin/products \
    wrangler r2 bucket create eclaire-media
    wrangler r2 bucket create eclaire-media-preview   # local/preview
    ```
-2. **Set secrets** (never commit these):
+2. **Set secrets** (never commit these) in the Cloudflare dashboard
+   (Workers › Settings › Variables and Secrets) or via the CLI:
    ```bash
-   wrangler secret put ADMIN_API_KEY
+   wrangler secret put ADMIN_USERNAME           # admin login username
+   wrangler secret put ADMIN_PASSWORD           # initial password (changeable in-app)
    wrangler secret put STRIPE_SECRET_KEY        # optional — enables checkout
    wrangler secret put STRIPE_WEBHOOK_SECRET    # from the Stripe webhook endpoint
    ```

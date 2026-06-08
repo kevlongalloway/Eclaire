@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
+import ChangePassword from "./ChangePassword.jsx";
 
 const NAV = [
   { to: "/", label: "Overview", end: true, icon: GridIcon },
@@ -8,7 +10,13 @@ const NAV = [
 ];
 
 export default function Layout({ children }) {
-  const { logout } = useAuth();
+  const { logout, username, mustChangePassword, dismissPasswordPrompt } = useAuth();
+  const [showChange, setShowChange] = useState(false);
+
+  function closeChange() {
+    setShowChange(false);
+    dismissPasswordPrompt();
+  }
 
   return (
     <div className="ad-shell">
@@ -33,13 +41,35 @@ export default function Layout({ children }) {
           ))}
         </nav>
 
-        <button className="ad-nav-link ad-logout" onClick={logout}>
-          <LogoutIcon />
-          <span>Sign out</span>
-        </button>
+        <div className="ad-sidebar-foot">
+          {username && (
+            <div className="ad-account">
+              <span className="ad-account-avatar">{username.slice(0, 1).toUpperCase()}</span>
+              <span className="ad-account-name">{username}</span>
+            </div>
+          )}
+          <button className="ad-nav-link" onClick={() => setShowChange(true)}>
+            <KeyIcon />
+            <span>Change password</span>
+          </button>
+          <button className="ad-nav-link ad-logout" onClick={logout}>
+            <LogoutIcon />
+            <span>Sign out</span>
+          </button>
+        </div>
       </aside>
 
-      <main className="ad-main">{children}</main>
+      <main className="ad-main">
+        {mustChangePassword && !showChange && (
+          <div className="ad-banner">
+            <span>You're using the default password. Set a new one to secure the portal.</span>
+            <button className="ad-btn ad-btn-sm" onClick={() => setShowChange(true)}>Change password</button>
+          </div>
+        )}
+        {children}
+      </main>
+
+      {showChange && <ChangePassword onClose={closeChange} forced={mustChangePassword} />}
     </div>
   );
 }
@@ -76,6 +106,14 @@ function LogoutIcon() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
       <path d="m16 17 5-5-5-5M21 12H9" />
+    </svg>
+  );
+}
+function KeyIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <circle cx="7.5" cy="15.5" r="3.5" />
+      <path d="m10 13 8-8M16 3l3 3-2 2-3-3M14 9l2 2" />
     </svg>
   );
 }

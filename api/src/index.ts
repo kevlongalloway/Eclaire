@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import type { Env } from "./types";
+import type { Env, Variables } from "./types";
 import { fail } from "./lib/response";
 import { requireAdmin } from "./middleware/auth";
+import { authPublic, authProtected } from "./routes/auth";
 import { publicProducts, adminProducts } from "./routes/products";
 import { publicImages, adminImages } from "./routes/images";
 import { publicDiscounts, adminDiscounts } from "./routes/discounts";
@@ -11,7 +12,7 @@ import { adminStats } from "./routes/stats";
 import { checkout } from "./routes/checkout";
 import { webhooks } from "./routes/webhooks";
 
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 /* ----------------------------------- CORS ---------------------------------- */
 // Origins come from the CORS_ORIGINS var ("*" or a comma-separated allowlist).
@@ -25,7 +26,7 @@ app.use(
       return origin && allowed.includes(origin) ? origin : "";
     },
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "X-Admin-Key"],
+    allowHeaders: ["Content-Type", "Authorization"],
     maxAge: 86400,
   }),
 );
@@ -42,11 +43,15 @@ app.route("/orders", publicOrders);
 app.route("/checkout", checkout);
 app.route("/webhooks", webhooks);
 
-/* ------------------------- admin routes (protected) ------------------------ */
-const admin = new Hono<{ Bindings: Env }>();
+/* --------------------------------- admin ----------------------------------- */
+const admin = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+// Public: username/password login (issues a session token).
+admin.route("/auth", authPublic);
+
+// Everything below requires a valid session token.
 admin.use("*", requireAdmin);
-// Login verification: returns 200 only when the admin key is valid.
-admin.get("/auth/check", (c) => c.json({ ok: true, data: { authenticated: true } }));
+admin.route("/auth", authProtected); // /auth/check, /auth/logout, /auth/password
 admin.route("/stats", adminStats);
 admin.route("/products", adminProducts);
 admin.route("/images", adminImages);

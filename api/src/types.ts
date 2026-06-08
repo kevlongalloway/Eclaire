@@ -7,13 +7,20 @@ export interface Env {
   // vars
   CORS_ORIGINS: string;
   PUBLIC_BASE_URL: string;
-  // secrets
-  ADMIN_API_KEY: string;
+  // secrets — admin login credentials (set in the Cloudflare dashboard)
+  ADMIN_USERNAME: string;
+  ADMIN_PASSWORD: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
 }
 
-export type AppContext = Context<{ Bindings: Env }>;
+/** Per-request values set by middleware (the authenticated admin session). */
+export interface Variables {
+  sessionTokenHash: string;
+  adminUsername: string;
+}
+
+export type AppContext = Context<{ Bindings: Env; Variables: Variables }>;
 
 /** A product as returned by the public API (parsed JSON columns). */
 export interface Product {
