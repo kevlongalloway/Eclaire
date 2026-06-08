@@ -1,0 +1,50 @@
+# Render Blueprint — deploys BOTH frontends from this monorepo as static sites.
+# Render reads this file from the repo root. In the dashboard: New → Blueprint,
+# point it at this repo, and set VITE_API_BASE for each service (the URL of your
+# deployed Cloudflare Worker, no trailing slash).
+#
+# The API itself is NOT deployed here — it runs on Cloudflare Workers
+# (see api/ and DEPLOYMENT.md).
+
+services:
+  # --------------------------------------------------------------------------
+  # Customer storefront
+  # --------------------------------------------------------------------------
+  - type: web
+    name: eclaire-storefront
+    runtime: static
+    rootDir: storefront
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      # Base URL of the Éclaire API worker (no trailing slash). Read at BUILD
+      # time — a redeploy is required after changing it. Leave unset for demo mode.
+      - key: VITE_API_BASE
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # --------------------------------------------------------------------------
+  # Admin portal
+  # --------------------------------------------------------------------------
+  - type: web
+    name: eclaire-admin
+    runtime: static
+    rootDir: admin
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE
+        sync: false
+    routes:
+      # SPA fallback — client-side routing.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      # Keep the admin portal out of search indexes.
+      - path: /*
+        name: X-Robots-Tag
+        value: noindex, nofollow

@@ -28,8 +28,8 @@ VITE_API_BASE=https://your-worker.workers.dev
 - **Local:** put it in `.env` (gitignored).
 - **Render:** add it as an environment variable on the static site (it's read
   at **build time**, so a redeploy is required after changing it). It's also
-  declared in [`render.yaml`](./render.yaml) with `sync: false` so Render
-  prompts you for the value on first deploy.
+  declared in the root [`render.yaml`](../render.yaml) blueprint with `sync: false`
+  so Render prompts you for the value on first deploy.
 
 When `VITE_API_BASE` is unset (or the API is unreachable), the app falls back
 to demo mode: products render from mock data, but checkout and discount codes
@@ -82,21 +82,26 @@ are read from `metadata` with sensible fallbacks — see `displayFields` in
 
 ## Deploy to Render (static site)
 
-This repo includes a [`render.yaml`](./render.yaml) blueprint.
+This is a monorepo, so deployment is driven by the **root** [`render.yaml`](../render.yaml)
+blueprint (which deploys both this storefront and the admin portal), or set it
+up manually:
 
 **Option A — Blueprint (recommended)**
 
-1. Push this repo to GitHub/GitLab.
-2. In the Render dashboard: **New → Blueprint**, point it at this repo.
-3. Render reads `render.yaml`, provisions a static site, and prompts for
-   `VITE_API_BASE`.
+1. Push the repo to GitHub/GitLab.
+2. In the Render dashboard: **New → Blueprint**, point it at this repo. Render
+   reads the root `render.yaml` and provisions both static sites.
+3. Set `VITE_API_BASE` (your Cloudflare Worker URL) for each service.
 
 **Option B — Manual static site**
 
 1. **New → Static Site**, connect this repo.
-2. **Build Command:** `npm install && npm run build` · **Publish Directory:** `dist`
-3. Add environment variable `VITE_API_BASE`.
-4. Add a rewrite rule **Source** `/*` → **Destination** `/index.html`.
+2. **Root Directory:** `storefront`
+3. **Build Command:** `npm install && npm run build` · **Publish Directory:** `dist`
+4. Add environment variable `VITE_API_BASE`.
+5. Add a rewrite rule **Source** `/*` → **Destination** `/index.html`.
+
+See [`../DEPLOYMENT.md`](../DEPLOYMENT.md) for the full end-to-end guide.
 
 ## Project structure
 
@@ -105,10 +110,11 @@ index.html        # Vite entry HTML
 src/main.jsx       # React bootstrap
 src/App.jsx        # storefront UI + styles
 src/api.js         # API client, money/format helpers, catalog/variant builder
-render.yaml        # Render static-site blueprint
 .env.example       # VITE_API_BASE template
 vite.config.js
 ```
+
+> The Render blueprint lives at the repo root ([`../render.yaml`](../render.yaml)).
 
 ## Notes
 
