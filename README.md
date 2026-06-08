@@ -1,117 +1,56 @@
 # Éclaire
 
-A luxury jewelry storefront — a React single-page app wired to the
-**E-commaxxing API** (products, discount codes, Stripe checkout, order
-tracking). Built with Vite and deployable as a **static site on Render**.
-
-With no API URL configured it runs in **demo mode** on a bundled mock catalog
-so the site always renders.
-
-## Local development
-
-```bash
-npm install
-cp .env.example .env      # then set VITE_API_BASE to your worker URL
-npm run dev               # start dev server (http://localhost:5173)
-npm run build             # production build → dist/
-npm run preview           # preview the production build locally
-```
-
-## Connecting the backend
-
-Set a single environment variable to point at your API worker:
+A luxury jewelry commerce platform, organized as a monorepo:
 
 ```
-VITE_API_BASE=https://your-worker.workers.dev
+.
+├── storefront/   # Customer-facing storefront (React + Vite static site)
+├── api/          # Commerce API — Cloudflare Workers (Hono) + D1 + R2
+└── admin/        # Admin portal (React + Vite static site)
 ```
 
-- **Local:** put it in `.env` (gitignored).
-- **Render:** add it as an environment variable on the static site (it's read
-  at **build time**, so a redeploy is required after changing it). It's also
-  declared in [`render.yaml`](./render.yaml) with `sync: false` so Render
-  prompts you for the value on first deploy.
+## Components
 
-When `VITE_API_BASE` is unset (or the API is unreachable), the app falls back
-to demo mode: products render from mock data, but checkout and discount codes
-are disabled.
+### `storefront/` — customer storefront
+The original React single-page app: catalog, cart, discounts, Stripe checkout,
+and order tracking. Deploys as a static site and talks to the API via
+`VITE_API_BASE`. See [`storefront/README.md`](storefront/README.md).
 
-### What's wired up
+### `api/` — commerce API
+A Cloudflare Workers API (Hono) backed by **D1** (products, discounts, orders)
+and **R2** (product images). It exposes:
 
-| Feature | Endpoint | Where |
-|---|---|---|
-| Catalog (paginated) | `GET /products` | `src/api.js` → `listAllProducts` |
-| Prices | — | shown via `formatPrice` (cents → currency) |
-| Discount codes + automatic sales | `POST /discounts/validate` | cart drawer |
-| Checkout (Stripe hosted) | `POST /checkout/session` | "Checkout" button → redirect |
-| Order status + tracking | `GET /orders?session_id=` | success page (`?session_id=…`) |
+- **Public routes** for the storefront — products, images, discount validation,
+  Stripe checkout, and order status.
+- **Admin routes** (`/admin/*`, bearer-token auth) for the admin portal —
+  managing products, images, discounts, and orders.
 
-The success page is the same SPA route: after Stripe redirects back to
-`…/?session_id={CHECKOUT_SESSION_ID}`, the app polls `GET /orders` and shows
-status, items, totals, shipping address, and a carrier tracking link.
+See [`api/README.md`](api/README.md) for the full endpoint reference and
+deployment steps.
 
-## Length (inches) + width (mm) variations — backend compatibility
+### `admin/` — admin portal
+The internal dashboard (React + Vite): an **overview** (revenue, orders, units,
+unfulfilled count, charts), **products** (create / edit / delete, image upload),
+and **orders** (status, fulfillment, tracking). Sign-in uses a username/password
+(the API worker's `ADMIN_USERNAME` / `ADMIN_PASSWORD` secrets); the password can
+be changed from the portal after launch. Deploys as a static site behind your
+own access controls. See [`admin/README.md`](admin/README.md).
 
-Each chain is offered in several **lengths** and **widths**. The checkout API's
-`items` array only accepts `{ productId, quantity }` — there is **no per-line
-field for length/width** — so how those dimensions reach the order depends on
-how the catalog is modelled. The frontend (`src/api.js` → `buildCatalog`)
-supports **both** documented patterns and picks per product based on metadata:
-
-- **Pattern B — recommended (one product per length×width combo).**
-  Link variants with `metadata.base_product` and tag each with
-  `metadata.length` and `metadata.width`. The selected combination resolves to
-  that variant's real `productId`, so per-combination **stock is enforced** and
-  the dimensions are **captured in `product_name` on the order** — including in
-  mixed-size carts. Optional: `metadata.default_length` / `default_width`.
-
-- **Pattern A — simple (one product, dimensions are display-only).**
-  Put the options in `metadata.lengths` (e.g. `["18\"","20\"","22\""]`) and
-  `metadata.widths` (e.g. `["2mm","3mm","4mm","5mm"]`). Every combination shares
-  one `productId`/price/stock. The chosen dimensions are saved client-side and
-  shown on the confirmation page, but are **not** recorded per line on the order
-  (so a mixed-size cart can't be disambiguated on the order record).
-
-**Verdict:** the API is compatible with length/width variations — fully, and
-including stock + order capture, **only under Pattern B**. Under Pattern A the
-dimensions are cosmetic. Use Pattern B if you need per-size inventory or the
-dimensions printed on the order/packing slip.
-
-Other product display fields (collection, metal, weight, swatch colour, tag)
-are read from `metadata` with sensible fallbacks — see `displayFields` in
-`src/api.js`.
-
-## Deploy to Render (static site)
-
-This repo includes a [`render.yaml`](./render.yaml) blueprint.
-
-**Option A — Blueprint (recommended)**
-
-1. Push this repo to GitHub/GitLab.
-2. In the Render dashboard: **New → Blueprint**, point it at this repo.
-3. Render reads `render.yaml`, provisions a static site, and prompts for
-   `VITE_API_BASE`.
-
-**Option B — Manual static site**
-
-1. **New → Static Site**, connect this repo.
-2. **Build Command:** `npm install && npm run build` · **Publish Directory:** `dist`
-3. Add environment variable `VITE_API_BASE`.
-4. Add a rewrite rule **Source** `/*` → **Destination** `/index.html`.
-
-## Project structure
+## How they connect
 
 ```
-index.html        # Vite entry HTML
-src/main.jsx       # React bootstrap
-src/App.jsx        # storefront UI + styles
-src/api.js         # API client, money/format helpers, catalog/variant builder
-render.yaml        # Render static-site blueprint
-.env.example       # VITE_API_BASE template
-vite.config.js
+            VITE_API_BASE                  username/password → token
+storefront ───────────────▶  api (Workers)  ◀───────────────────  admin
+                              │   │
+                         D1 ◀─┘   └─▶ R2          Stripe ◀─▶ /checkout, /webhooks
+                      (products,      (product
+                       discounts,      images)
+                       orders)
 ```
 
-## Notes
+## Getting started
 
-CORS: the API must allow this site's origin (`CORS_ORIGINS` in the worker's
-`wrangler.toml`). The newsletter signup has no documented endpoint, so it
-remains a local-only stub.
+Each component is self-contained — see its README:
+
+- Storefront: [`storefront/README.md`](storefront/README.md)
+- API: [`api/README.md`](api/README.md)

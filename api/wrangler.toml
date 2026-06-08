@@ -1,0 +1,53 @@
+name = "eclaire-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-18"
+compatibility_flags = ["nodejs_compat"]
+
+# ---------------------------------------------------------------------------
+# Public configuration (non-secret). Secrets live in .dev.vars (local) and
+# the Cloudflare dashboard / `wrangler secret put` (production):
+# ADMIN_USERNAME, ADMIN_PASSWORD, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET.
+# ---------------------------------------------------------------------------
+[vars]
+# Comma-separated list of allowed CORS origins, or "*" to allow any.
+CORS_ORIGINS = "*"
+# Public base URL of THIS worker (no trailing slash). Used to build absolute
+# image URLs returned to clients. Override per-environment.
+PUBLIC_BASE_URL = "http://localhost:8787"
+
+# ---------------------------------------------------------------------------
+# D1 — relational store for products, discounts, orders.
+# Create with:  wrangler d1 create eclaire
+# then paste the returned database_id below.
+# ---------------------------------------------------------------------------
+[[d1_databases]]
+binding = "DB"
+database_name = "eclaire"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+# ---------------------------------------------------------------------------
+# R2 — object store for product images.
+# Create with:  wrangler r2 bucket create eclaire-media
+# ---------------------------------------------------------------------------
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "eclaire-media"
+preview_bucket_name = "eclaire-media-preview"
+
+# ---------------------------------------------------------------------------
+# Example production environment. Duplicate + customise as needed.
+# Deploy with:  wrangler deploy --env production
+# ---------------------------------------------------------------------------
+[env.production]
+vars = { CORS_ORIGINS = "https://your-storefront.example,https://admin.your-domain.example", PUBLIC_BASE_URL = "https://eclaire-api.your-subdomain.workers.dev" }
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "eclaire"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[[env.production.r2_buckets]]
+binding = "MEDIA"
+bucket_name = "eclaire-media"

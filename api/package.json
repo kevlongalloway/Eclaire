@@ -1,0 +1,25 @@
+{
+  "name": "@eclaire/api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Éclaire commerce API — Cloudflare Workers (Hono) backing the storefront and admin portal.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "db:migrate:local": "wrangler d1 migrations apply eclaire --local",
+    "db:migrate": "wrangler d1 migrations apply eclaire --remote",
+    "db:seed:local": "wrangler d1 execute eclaire --local --file=./seeds/seed.sql",
+    "db:seed": "wrangler d1 execute eclaire --remote --file=./seeds/seed.sql",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "hono": "^4.6.14"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "typescript": "^5.7.2",
+    "wrangler": "^3.95.0"
+  }
+}

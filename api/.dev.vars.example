@@ -1,0 +1,15 @@
+# Local secrets for `wrangler dev`. Copy to `.dev.vars` (gitignored).
+# In production set these in the Cloudflare dashboard (Workers › Settings ›
+# Variables and Secrets) or with `wrangler secret put <NAME>`.
+
+# Admin portal login credentials. The username is fixed to ADMIN_USERNAME;
+# ADMIN_PASSWORD is the initial password (it can be changed later from the
+# admin portal, after which the new password is stored in D1 and takes
+# precedence over this secret).
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=change-me-please
+
+# Stripe — required for live checkout + order webhooks. Leave blank to disable
+# checkout (the storefront then stays in demo mode).
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
