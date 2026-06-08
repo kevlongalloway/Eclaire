@@ -54,3 +54,11 @@ Each component is self-contained — see its README:
 
 - Storefront: [`storefront/README.md`](storefront/README.md)
 - API: [`api/README.md`](api/README.md)
+- Admin: [`admin/README.md`](admin/README.md)
+
+## Deployment
+
+The API runs on **Cloudflare Workers** (with D1 + R2); both frontends run on
+**Render** as static sites (root [`render.yaml`](render.yaml) blueprint). Full
+step-by-step instructions for all three services are in
+**[`DEPLOYMENT.md`](DEPLOYMENT.md)**.

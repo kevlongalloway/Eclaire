@@ -58,13 +58,16 @@ and `ADMIN_PASSWORD` from the API's `.dev.vars`.
 
 Build a static bundle and host it anywhere, behind your own access controls:
 
+- **Render (recommended):** deploy via the root [`../render.yaml`](../render.yaml)
+  blueprint (New → Blueprint), or manually with **Root Directory** `admin`,
+  build `npm install && npm run build`, publish `dist`, and an SPA rewrite
+  `/* → /index.html`.
 - **Cloudflare Pages / Netlify:** the included [`public/_redirects`](public/_redirects)
   provides the SPA fallback (`/* → /index.html`).
-- **Render:** the included [`render.yaml`](render.yaml) declares the static site,
-  the `VITE_API_BASE` variable, the SPA rewrite, and a `noindex` header.
 
 Set **`VITE_API_BASE`** to the worker URL at build time, and add the site's
-origin to the API worker's `CORS_ORIGINS`.
+origin to the API worker's `CORS_ORIGINS`. See [`../DEPLOYMENT.md`](../DEPLOYMENT.md)
+for the full guide.
 
 ## Endpoints consumed
 
@@ -84,7 +87,6 @@ See [`../api/README.md`](../api/README.md) for the full reference.
 admin/
 ├── index.html
 ├── public/_redirects        # SPA fallback for static hosts
-├── render.yaml              # Render static-site blueprint
 └── src/
     ├── main.jsx             # bootstrap (router + auth provider)
     ├── App.jsx              # routes + auth gate
