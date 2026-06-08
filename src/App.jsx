@@ -1,97 +1,89 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import {
+  api,
+  pollForOrder,
+  buildCatalog,
+  formatPrice,
+  getPrimaryImage,
+  stockBadge,
+  trackingUrl,
+  API_CONFIGURED,
+} from "./api.js";
 
 /* ============================================================================
    ÉCLAIRE — Luxury Jewelry Storefront
    ----------------------------------------------------------------------------
-   DESIGN-ONLY. All data is mock. Backend integration points are marked with
-   // BACKEND: ... comments. Replace PRODUCTS, cart submission, and search with
-   real API calls when wiring this up.
+   Wired to the E-commaxxing API. Configure VITE_API_BASE to point at your
+   worker (see .env.example). With no API configured the app runs in DEMO MODE
+   on the mock catalog below — products render, but checkout and discount codes
+   are disabled (there are no real product IDs to send).
+
+   Money is always an integer in the smallest currency unit (cents).
+
+   Length (inches) + width (mm) variations: see api.js → buildCatalog for how
+   they map onto the backend. Pattern B (one product per length×width combo,
+   linked by metadata.base_product) captures the dimensions on the order.
+   Pattern A (single product, metadata.lengths/widths) treats them as
+   display-only and passes the selection through the success URL.
    ============================================================================ */
 
 /* ---------------------------------- DATA ---------------------------------- */
-// BACKEND: replace with fetch('/api/products')
-const PRODUCTS = [
+/* DEMO fallback only. Shape matches the API Product schema (price in cents,
+   variations under metadata.lengths/metadata.widths — Pattern A). When
+   VITE_API_BASE is set this is replaced by GET /products. */
+const MOCK_PRODUCTS = [
   {
-    id: "lumiere-rope",
-    name: "Lumière Rope Chain",
-    collection: "Signature Silver",
-    price: 248,
-    metal: "925 Sterling Silver",
-    weight: "18.4g",
-    length: '20"',
-    width: "3mm",
-    tag: "Bestseller",
-    desc: "A tightly woven rope that throws light in every direction. Substantial on the skin, quietly assured.",
-    swatch: "#C8CCD2",
+    id: "lumiere-rope", name: "Lumière Rope Chain", price: 24800, currency: "usd",
+    images: [], stock: -1, active: true,
+    description: "A tightly woven rope that throws light in every direction. Substantial on the skin, quietly assured.",
+    metadata: { collection: "Signature Silver", metal: "925 Sterling Silver", weight: "18.4g", swatch: "#C8CCD2", tag: "Bestseller", lengths: ['18"', '20"', '22"'], widths: ["2mm", "3mm", "4mm", "5mm"], default_length: '20"', default_width: "3mm" },
   },
   {
-    id: "clair-cuban",
-    name: "Clair Cuban Link",
-    collection: "Signature Silver",
-    price: 312,
-    metal: "925 Sterling Silver",
-    weight: "26.1g",
-    length: '22"',
-    width: "5mm",
-    tag: "New",
-    desc: "Hand-polished interlocking links with real heft. The piece that anchors a wardrobe.",
-    swatch: "#B9BEC6",
+    id: "clair-cuban", name: "Clair Cuban Link", price: 31200, currency: "usd",
+    images: [], stock: -1, active: true,
+    description: "Hand-polished interlocking links with real heft. The piece that anchors a wardrobe.",
+    metadata: { collection: "Signature Silver", metal: "925 Sterling Silver", weight: "26.1g", swatch: "#B9BEC6", tag: "New", lengths: ['18"', '20"', '22"'], widths: ["2mm", "3mm", "4mm", "5mm"], default_length: '22"', default_width: "5mm" },
   },
   {
-    id: "halo-box",
-    name: "Halo Box Chain",
-    collection: "Signature Silver",
-    price: 196,
-    metal: "925 Sterling Silver",
-    weight: "11.2g",
-    length: '18"',
-    width: "2mm",
-    tag: null,
-    desc: "Clean geometric links that sit flat and catch a sharp, architectural glint.",
-    swatch: "#CDD2D8",
+    id: "halo-box", name: "Halo Box Chain", price: 19600, currency: "usd",
+    images: [], stock: -1, active: true,
+    description: "Clean geometric links that sit flat and catch a sharp, architectural glint.",
+    metadata: { collection: "Signature Silver", metal: "925 Sterling Silver", weight: "11.2g", swatch: "#CDD2D8", tag: null, lengths: ['18"', '20"', '22"'], widths: ["2mm", "3mm", "4mm", "5mm"], default_length: '18"', default_width: "2mm" },
   },
   {
-    id: "serein-figaro",
-    name: "Serein Figaro",
-    collection: "Signature Silver",
-    price: 224,
-    metal: "925 Sterling Silver",
-    weight: "15.8g",
-    length: '20"',
-    width: "4mm",
-    tag: null,
-    desc: "The rhythm of alternating links — a timeless pattern, weighted for the everyday.",
-    swatch: "#C2C7CE",
+    id: "serein-figaro", name: "Serein Figaro", price: 22400, currency: "usd",
+    images: [], stock: -1, active: true,
+    description: "The rhythm of alternating links — a timeless pattern, weighted for the everyday.",
+    metadata: { collection: "Signature Silver", metal: "925 Sterling Silver", weight: "15.8g", swatch: "#C2C7CE", tag: null, lengths: ['18"', '20"', '22"'], widths: ["2mm", "3mm", "4mm", "5mm"], default_length: '20"', default_width: "4mm" },
   },
   {
-    id: "etoile-snake",
-    name: "Étoile Snake Chain",
-    collection: "Signature Silver",
-    price: 178,
-    metal: "925 Sterling Silver",
-    weight: "9.6g",
-    length: '18"',
-    width: "2mm",
-    tag: null,
-    desc: "Liquid-smooth and fluid, it moves like mercury and reads as pure light.",
-    swatch: "#D1D5DA",
+    id: "etoile-snake", name: "Étoile Snake Chain", price: 17800, currency: "usd",
+    images: [], stock: -1, active: true,
+    description: "Liquid-smooth and fluid, it moves like mercury and reads as pure light.",
+    metadata: { collection: "Signature Silver", metal: "925 Sterling Silver", weight: "9.6g", swatch: "#D1D5DA", tag: null, lengths: ['18"', '20"', '22"'], widths: ["2mm", "3mm", "4mm", "5mm"], default_length: '18"', default_width: "2mm" },
   },
   {
-    id: "aube-curb",
-    name: "Aube Curb Chain",
-    collection: "Signature Silver",
-    price: 268,
-    metal: "925 Sterling Silver",
-    weight: "21.0g",
-    length: '22"',
-    width: "4mm",
-    tag: "Bestseller",
-    desc: "Flattened, twisted links polished to a mirror. Bold without ever shouting.",
-    swatch: "#BEC3CB",
+    id: "aube-curb", name: "Aube Curb Chain", price: 26800, currency: "usd",
+    images: [], stock: -1, active: true,
+    description: "Flattened, twisted links polished to a mirror. Bold without ever shouting.",
+    metadata: { collection: "Signature Silver", metal: "925 Sterling Silver", weight: "21.0g", swatch: "#BEC3CB", tag: "Bestseller", lengths: ['18"', '20"', '22"'], widths: ["2mm", "3mm", "4mm", "5mm"], default_length: '22"', default_width: "4mm" },
   },
 ];
 
-const COLLECTIONS = ["All", "Signature Silver"];
+/* Collapse cart lines into API line items keyed by productId. Under Pattern A
+   several sizes share one productId, so their quantities must be summed before
+   they're sent to /checkout/session and /discounts/validate. */
+function aggregateItems(cart, withPrice) {
+  const byId = new Map();
+  for (const l of cart) {
+    const existing = byId.get(l.productId);
+    if (existing) existing.quantity += l.qty;
+    else byId.set(l.productId, withPrice
+      ? { productId: l.productId, price: l.price, quantity: l.qty }
+      : { productId: l.productId, quantity: l.qty });
+  }
+  return [...byId.values()];
+}
 
 /* --------------------------------- ICONS ---------------------------------- */
 const Icon = {
@@ -150,11 +142,22 @@ const Icon = {
       <path d="M8 12V5.5a1.5 1.5 0 0 1 3 0V11m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-.5V6a1.5 1.5 0 0 1 3 0v7c0 4-3 7-7 7s-6-3-7-5l-1.5-3a1.5 1.5 0 0 1 2.6-1.5L8 13" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  Check: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...p}>
+      <path d="m5 12 4.5 4.5L19 7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Truck: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}>
+      <path d="M3 6h11v9H3zM14 9h4l3 3v3h-7z" strokeLinejoin="round" />
+      <circle cx="7" cy="18" r="1.6" /><circle cx="17.5" cy="18" r="1.6" />
+    </svg>
+  ),
 };
 
 /* ----------------------- PRODUCT VISUAL (CSS render) ---------------------- */
-/* A luminous abstract "chain on light" tile — works as a placeholder until
-   real photography is dropped in. Each product gets a unique drape. */
+/* A luminous abstract "chain on light" tile — used when a product has no
+   photography. Each product gets a unique drape based on its id. */
 function ProductVisual({ product, hover }) {
   const links = 11;
   const seedShift = (product.id.charCodeAt(0) % 5) - 2;
@@ -192,6 +195,18 @@ function ProductVisual({ product, hover }) {
       <span className="ec-visual-sheen" />
     </div>
   );
+}
+
+/* Renders real photography when present, otherwise the CSS visual. */
+function Tile({ id, swatch, image, name, hover = false }) {
+  if (image) {
+    return (
+      <div className="ec-visual">
+        <img className="ec-visual-img" src={image} alt={name || ""} loading="lazy" />
+      </div>
+    );
+  }
+  return <ProductVisual product={{ id, swatch }} hover={hover} />;
 }
 
 /* -------------------------------- HEADER ---------------------------------- */
@@ -264,7 +279,7 @@ function Marquee() {
 }
 
 /* ------------------------------ PRODUCT CARD ------------------------------ */
-function ProductCard({ product, onOpen, onAdd, index }) {
+function ProductCard({ group, onOpen, onAdd, index }) {
   const [hover, setHover] = useState(false);
   return (
     <article
@@ -273,17 +288,17 @@ function ProductCard({ product, onOpen, onAdd, index }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <button className="ec-card-media" onClick={() => onOpen(product)} aria-label={`View ${product.name}`}>
-        {product.tag && <span className={`ec-tag ec-tag-${product.tag.toLowerCase()}`}>{product.tag}</span>}
-        <ProductVisual product={product} hover={hover} />
+      <button className="ec-card-media" onClick={() => onOpen(group)} aria-label={`View ${group.name}`}>
+        {group.tag && <span className={`ec-tag ec-tag-${String(group.tag).toLowerCase()}`}>{group.tag}</span>}
+        <Tile id={group.key} swatch={group.swatch} image={getPrimaryImage(group)} name={group.name} hover={hover} />
       </button>
       <div className="ec-card-body">
         <div className="ec-card-row">
-          <h3 className="ec-card-name">{product.name}</h3>
-          <span className="ec-card-price">${product.price}</span>
+          <h3 className="ec-card-name">{group.name}</h3>
+          <span className="ec-card-price">{formatPrice(group.price, group.currency)}</span>
         </div>
-        <p className="ec-card-meta">{product.metal} · {product.length}</p>
-        <button className="ec-card-add" onClick={() => onAdd(product)}>
+        <p className="ec-card-meta">{group.metal}{group.metal && group.defaultLength ? " · " : ""}{group.defaultLength}</p>
+        <button className="ec-card-add" onClick={() => onAdd(group, group.defaultLength, group.defaultWidth)}>
           Add to bag
         </button>
       </div>
@@ -292,7 +307,7 @@ function ProductCard({ product, onOpen, onAdd, index }) {
 }
 
 /* ------------------------------ SHOP GRID --------------------------------- */
-function Shop({ products, onOpen, onAdd, filter, setFilter, sort, setSort }) {
+function Shop({ groups, onOpen, onAdd, collections, filter, setFilter, sort, setSort }) {
   return (
     <section className="ec-shop" id="shop">
       <div className="ec-shop-head">
@@ -302,7 +317,7 @@ function Shop({ products, onOpen, onAdd, filter, setFilter, sort, setSort }) {
         </div>
         <div className="ec-shop-controls">
           <div className="ec-chips">
-            {COLLECTIONS.map((c) => (
+            {collections.map((c) => (
               <button key={c} className={`ec-chip ${filter === c ? "is-on" : ""}`} onClick={() => setFilter(c)}>{c}</button>
             ))}
           </div>
@@ -316,8 +331,8 @@ function Shop({ products, onOpen, onAdd, filter, setFilter, sort, setSort }) {
         </div>
       </div>
       <div className="ec-grid">
-        {products.map((p, i) => (
-          <ProductCard key={p.id} product={p} index={i} onOpen={onOpen} onAdd={onAdd} />
+        {groups.map((g, i) => (
+          <ProductCard key={g.key} group={g} index={i} onOpen={onOpen} onAdd={onAdd} />
         ))}
       </div>
     </section>
@@ -379,47 +394,66 @@ function Story() {
 }
 
 /* ---------------------------- PRODUCT DRAWER ------------------------------ */
-function ProductModal({ product, onClose, onAdd }) {
-  const [len, setLen] = useState(product?.length);
-  const [width, setWidth] = useState(product?.width);
-  useEffect(() => { setLen(product?.length); setWidth(product?.width); }, [product]);
-  if (!product) return null;
-  const lengths = ['18"', '20"', '22"'];
-  const widths = ["2mm", "3mm", "4mm", "5mm"];
+function ProductModal({ group, onClose, onAdd }) {
+  const [len, setLen] = useState(group?.defaultLength);
+  const [width, setWidth] = useState(group?.defaultWidth);
+  useEffect(() => { setLen(group?.defaultLength); setWidth(group?.defaultWidth); }, [group]);
+  if (!group) return null;
+
+  // Resolve the chosen combination against the catalog (Pattern B may mark
+  // specific combinations sold out; Pattern A is always the one product).
+  const resolved = group.resolve(len, width);
+  const price = resolved && resolved.price != null ? resolved.price : group.price;
+  const unavailable = !resolved || resolved.available === false;
+  const badge = resolved && typeof resolved.stock === "number" ? stockBadge(resolved.stock) : null;
+
   return (
     <div className="ec-overlay" onClick={onClose}>
       <div className="ec-modal" onClick={(e) => e.stopPropagation()}>
         <button className="ec-modal-close" onClick={onClose} aria-label="Close"><Icon.Close width="22" height="22" /></button>
         <div className="ec-modal-media">
-          <ProductVisual product={product} hover />
+          <Tile id={group.key} swatch={group.swatch} image={getPrimaryImage(group)} name={group.name} hover />
         </div>
         <div className="ec-modal-info">
-          <p className="ec-eyebrow">{product.collection}{product.tag ? ` · ${product.tag}` : ""}</p>
-          <h2 className="ec-modal-name">{product.name}</h2>
-          <p className="ec-modal-price">${product.price}</p>
-          <p className="ec-modal-desc">{product.desc}</p>
+          <p className="ec-eyebrow">{group.collection}{group.tag ? ` · ${group.tag}` : ""}</p>
+          <h2 className="ec-modal-name">{group.name}</h2>
+          <p className="ec-modal-price">{formatPrice(price, group.currency)}</p>
+          <p className="ec-modal-desc">{group.desc}</p>
           <dl className="ec-specs">
-            <div><dt>Material</dt><dd>{product.metal}</dd></div>
-            <div><dt>Weight</dt><dd>{product.weight}</dd></div>
+            {group.metal && <div><dt>Material</dt><dd>{group.metal}</dd></div>}
+            {group.weight && <div><dt>Weight</dt><dd>{group.weight}</dd></div>}
           </dl>
           <div className="ec-len">
             <span className="ec-len-label">Length</span>
             <div className="ec-len-opts">
-              {lengths.map((l) => (
-                <button key={l} className={`ec-len-opt ${len === l ? "is-on" : ""}`} onClick={() => setLen(l)}>{l}</button>
-              ))}
+              {group.lengths.map((l) => {
+                const r = group.resolve(l, width);
+                const off = r && r.available === false;
+                return (
+                  <button key={l} disabled={off} className={`ec-len-opt ${len === l ? "is-on" : ""}`} onClick={() => setLen(l)}>{l}</button>
+                );
+              })}
             </div>
           </div>
           <div className="ec-len">
             <span className="ec-len-label">Width</span>
             <div className="ec-len-opts">
-              {widths.map((w) => (
-                <button key={w} className={`ec-len-opt ${width === w ? "is-on" : ""}`} onClick={() => setWidth(w)}>{w}</button>
-              ))}
+              {group.widths.map((w) => {
+                const r = group.resolve(len, w);
+                const off = r && r.available === false;
+                return (
+                  <button key={w} disabled={off} className={`ec-len-opt ${width === w ? "is-on" : ""}`} onClick={() => setWidth(w)}>{w}</button>
+                );
+              })}
             </div>
           </div>
-          <button className="ec-btn ec-btn-dark ec-full" onClick={() => { onAdd({ ...product, length: len, width }); onClose(); }}>
-            Add to bag · ${product.price}
+          {badge && <p className={`ec-stock ${resolved.stock === 0 ? "is-out" : "is-low"}`}>{badge}</p>}
+          <button
+            className="ec-btn ec-btn-dark ec-full"
+            disabled={unavailable}
+            onClick={() => { onAdd(group, len, width); onClose(); }}
+          >
+            {unavailable ? "Unavailable" : `Add to bag · ${formatPrice(price, group.currency)}`}
           </button>
           <p className="ec-modal-note">Ships in recyclable Éclaire packaging · 30-day returns</p>
         </div>
@@ -429,8 +463,18 @@ function ProductModal({ product, onClose, onAdd }) {
 }
 
 /* -------------------------------- CART ------------------------------------ */
-function Cart({ open, items, onClose, onQty, onRemove }) {
-  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+function Cart({ open, items, quote, quoteLoading, quoteError, code, setCode, onApply, onClose, onQty, onRemove, onCheckout, demo, checkoutError, checkoutBusy }) {
+  const currency = items[0]?.currency || "usd";
+  const clientSubtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+
+  // Authoritative amounts come from /discounts/validate when available.
+  const original = quote ? quote.original_amount : clientSubtotal;
+  const discountAmount = quote ? quote.discount_amount : 0;
+  const total = quote ? quote.final_amount : clientSubtotal;
+  const freeShip = quote ? quote.is_free_shipping : false;
+  const autoSales = (quote && quote.automatic_discounts) || [];
+  const appliedLabel = quote && quote.valid && quote.discount ? (quote.discount.description || quote.discount.name || quote.discount.code) : null;
+
   return (
     <>
       <div className={`ec-scrim ${open ? "is-open" : ""}`} onClick={onClose} />
@@ -447,36 +491,72 @@ function Cart({ open, items, onClose, onQty, onRemove }) {
         ) : (
           <>
             <div className="ec-cart-items">
+              {autoSales.length > 0 && (
+                <div className="ec-sale-banner"><Icon.Spark width="13" height="13" /> {autoSales[0].description || autoSales[0].name}</div>
+              )}
               {items.map((it) => (
                 <div className="ec-cart-item" key={it.key}>
-                  <div className="ec-cart-thumb"><ProductVisual product={it} hover={false} /></div>
+                  <div className="ec-cart-thumb"><Tile id={it.groupKey} swatch={it.swatch} image={it.image} name={it.name} /></div>
                   <div className="ec-cart-detail">
                     <div className="ec-cart-toprow">
                       <h4>{it.name}</h4>
                       <button className="ec-cart-remove" onClick={() => onRemove(it.key)} aria-label="Remove"><Icon.Close width="15" height="15" /></button>
                     </div>
-                    <p className="ec-cart-sub">{it.length} · {it.width} · {it.metal}</p>
+                    <p className="ec-cart-sub">{it.length} · {it.width}{it.metal ? ` · ${it.metal}` : ""}</p>
                     <div className="ec-cart-bottomrow">
                       <div className="ec-qty">
                         <button onClick={() => onQty(it.key, -1)} aria-label="Decrease"><Icon.Minus width="15" height="15" /></button>
                         <span>{it.qty}</span>
                         <button onClick={() => onQty(it.key, 1)} aria-label="Increase"><Icon.Plus width="15" height="15" /></button>
                       </div>
-                      <span className="ec-cart-price">${it.price * it.qty}</span>
+                      <span className="ec-cart-price">{formatPrice(it.price * it.qty, it.currency)}</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
             <div className="ec-cart-foot">
-              <div className="ec-cart-subtotal">
-                <span>Subtotal</span><span>${subtotal}</span>
+              {!demo && (
+                <div className="ec-discount">
+                  <div className="ec-discount-row">
+                    <input
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="Discount code"
+                      onKeyDown={(e) => e.key === "Enter" && onApply()}
+                    />
+                    <button className="ec-discount-apply" onClick={onApply} disabled={quoteLoading || !code.trim()}>
+                      {quoteLoading ? "…" : "Apply"}
+                    </button>
+                  </div>
+                  {quoteError && <p className="ec-discount-msg is-err">{quoteError}</p>}
+                  {appliedLabel && <p className="ec-discount-msg is-ok"><Icon.Check width="13" height="13" /> {appliedLabel}</p>}
+                </div>
+              )}
+
+              <div className="ec-cart-lines">
+                <div className="ec-cart-line"><span>Subtotal</span><span>{formatPrice(original, currency)}</span></div>
+                {discountAmount > 0 && (
+                  <div className="ec-cart-line is-discount"><span>Discount</span><span>−{formatPrice(discountAmount, currency)}</span></div>
+                )}
+                <div className="ec-cart-line"><span>Shipping</span><span>{freeShip ? "FREE" : "Calculated at checkout"}</span></div>
               </div>
-              <p className="ec-cart-ship">Shipping & taxes calculated at checkout.</p>
-              {/* BACKEND: wire this to your checkout/session endpoint */}
-              <button className="ec-btn ec-btn-dark ec-full" onClick={() => alert("Checkout — connect to your backend here.")}>
-                Checkout
-              </button>
+
+              <div className="ec-cart-subtotal">
+                <span>Total</span><span>{formatPrice(total, currency)}</span>
+              </div>
+
+              {checkoutError && <p className="ec-discount-msg is-err">{checkoutError}</p>}
+              {demo ? (
+                <>
+                  <button className="ec-btn ec-btn-dark ec-full" disabled>Checkout unavailable in demo</button>
+                  <p className="ec-cart-ship">Set <code>VITE_API_BASE</code> to enable live checkout.</p>
+                </>
+              ) : (
+                <button className="ec-btn ec-btn-dark ec-full" onClick={onCheckout} disabled={checkoutBusy}>
+                  {checkoutBusy ? "Redirecting…" : "Checkout"}
+                </button>
+              )}
             </div>
           </>
         )}
@@ -486,13 +566,13 @@ function Cart({ open, items, onClose, onQty, onRemove }) {
 }
 
 /* ------------------------------- SEARCH ----------------------------------- */
-function SearchOverlay({ open, onClose, onOpenProduct }) {
+function SearchOverlay({ open, groups, onClose, onOpenProduct }) {
   const [q, setQ] = useState("");
   const ref = useRef(null);
   useEffect(() => { if (open && ref.current) ref.current.focus(); if (!open) setQ(""); }, [open]);
-  // BACKEND: replace local filter with /api/search?q=
+  // No /search endpoint exists — filter the loaded catalog client-side.
   const results = q.trim()
-    ? PRODUCTS.filter((p) => (p.name + p.collection + p.metal).toLowerCase().includes(q.toLowerCase()))
+    ? groups.filter((g) => (g.name + " " + g.collection + " " + g.metal).toLowerCase().includes(q.toLowerCase()))
     : [];
   if (!open) return null;
   return (
@@ -506,11 +586,11 @@ function SearchOverlay({ open, onClose, onOpenProduct }) {
         {q.trim() && (
           <div className="ec-search-results">
             {results.length === 0 && <p className="ec-search-empty">No pieces found for “{q}”.</p>}
-            {results.map((p) => (
-              <button key={p.id} className="ec-search-result" onClick={() => { onOpenProduct(p); onClose(); }}>
-                <span className="ec-search-thumb"><ProductVisual product={p} hover={false} /></span>
-                <span className="ec-search-name">{p.name}<em>{p.collection}</em></span>
-                <span className="ec-search-price">${p.price}</span>
+            {results.map((g) => (
+              <button key={g.key} className="ec-search-result" onClick={() => { onOpenProduct(g); onClose(); }}>
+                <span className="ec-search-thumb"><Tile id={g.key} swatch={g.swatch} image={getPrimaryImage(g)} name={g.name} /></span>
+                <span className="ec-search-name">{g.name}<em>{g.collection}</em></span>
+                <span className="ec-search-price">{formatPrice(g.price, g.currency)}</span>
               </button>
             ))}
           </div>
@@ -534,7 +614,7 @@ function Newsletter() {
           <p className="ec-news-done">Welcome to Éclaire — keep an eye on your inbox.</p>
         ) : (
           <div className="ec-news-form">
-            {/* BACKEND: POST email to your list provider */}
+            {/* BACKEND: POST email to your list provider (no API endpoint documented) */}
             <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" type="email" />
             <button className="ec-btn ec-btn-dark" onClick={() => email.includes("@") && setDone(true)}>Subscribe</button>
           </div>
@@ -567,8 +647,136 @@ function Footer({ onNav }) {
   );
 }
 
+/* ---------------------------- ORDER STATUS -------------------------------- */
+const STATUS_COPY = {
+  pending: "Processing…",
+  paid: "Order confirmed!",
+  fulfilled: "Order shipped!",
+  cancelled: "Order cancelled",
+};
+const FULFILLMENT_COPY = {
+  unfulfilled: "Preparing your order",
+  processing: "Your order is being packed",
+  shipped: "Your order is on the way!",
+  delivered: "Your order has been delivered",
+};
+
+function OrderStatus({ sessionId, onBack }) {
+  const [order, setOrder] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  // Length/width selections aren't stored on the order line items in Pattern A,
+  // so recover them from the snapshot saved just before redirect.
+  const snapshot = useRef(null);
+  if (snapshot.current === null) {
+    try { snapshot.current = JSON.parse(localStorage.getItem("eclaire:lastCart") || "null"); }
+    catch { snapshot.current = null; }
+  }
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const o = await pollForOrder(sessionId);
+        if (alive) { setOrder(o); setLoading(false); }
+      } catch (e) {
+        if (alive) { setError(e.message); setLoading(false); }
+      }
+    })();
+    return () => { alive = false; };
+  }, [sessionId]);
+
+  return (
+    <div className="ec-order">
+      <div className="ec-order-inner">
+        <button className="ec-logo ec-order-logo" onClick={onBack}>
+          <span className="ec-logo-mark"><Icon.Spark width="14" height="14" /></span>Éclaire
+        </button>
+
+        {loading && (
+          <div className="ec-order-card ec-order-loading">
+            <Icon.Spark width="34" height="34" className="ec-news-spark" />
+            <h2>Confirming your order…</h2>
+            <p>Hold tight while we finalise your payment.</p>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="ec-order-card">
+            <h2>We couldn’t load your order</h2>
+            <p>{error}</p>
+            <button className="ec-btn ec-btn-dark" onClick={onBack}>Back to shop</button>
+          </div>
+        )}
+
+        {order && (
+          <div className="ec-order-card">
+            <span className="ec-order-icon"><Icon.Check width="30" height="30" /></span>
+            <h2>{STATUS_COPY[order.status] || "Order received"}</h2>
+            <p className="ec-order-state">{FULFILLMENT_COPY[order.fulfillment_status] || ""}</p>
+            {order.customer_email && <p className="ec-order-email">A confirmation was sent to {order.customer_email}.</p>}
+
+            <div className="ec-order-items">
+              {(order.items || []).map((it) => (
+                <div className="ec-order-row" key={it.id}>
+                  <span>{it.product_name} × {it.quantity}</span>
+                  <span>{formatPrice(it.price * it.quantity, it.currency)}</span>
+                </div>
+              ))}
+              <div className="ec-order-row ec-order-total">
+                <span>Total</span><span>{formatPrice(order.amount_total, order.currency)}</span>
+              </div>
+            </div>
+
+            {snapshot.current && snapshot.current.length > 0 && (
+              <div className="ec-order-selections">
+                <h3>Your selections</h3>
+                {snapshot.current.map((l) => (
+                  <p key={l.key}>{l.name} — {l.length} / {l.width} × {l.qty}</p>
+                ))}
+              </div>
+            )}
+
+            {order.tracking_number && (
+              <div className="ec-order-tracking">
+                <span className="ec-order-icon sm"><Icon.Truck width="20" height="20" /></span>
+                <div>
+                  <p className="ec-order-track-label">{order.shipping_carrier || "Tracking"}{order.shipping_service ? ` · ${order.shipping_service}` : ""}</p>
+                  <a href={trackingUrl(order.shipping_carrier, order.tracking_number)} target="_blank" rel="noreferrer">
+                    {order.tracking_number}
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {order.shipping_address_line1 && (
+              <div className="ec-order-ship">
+                <h3>Shipping to</h3>
+                <p>
+                  {order.shipping_name}<br />
+                  {order.shipping_address_line1}{order.shipping_address_line2 ? `, ${order.shipping_address_line2}` : ""}<br />
+                  {order.shipping_city}{order.shipping_state ? `, ${order.shipping_state}` : ""} {order.shipping_postal_code}<br />
+                  {order.shipping_country}
+                </p>
+              </div>
+            )}
+
+            <button className="ec-btn ec-btn-dark ec-full" onClick={onBack}>Continue shopping</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ================================== APP =================================== */
 export default function App() {
+  const [groups, setGroups] = useState([]);
+  const [collections, setCollections] = useState(["All"]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [demo, setDemo] = useState(!API_CONFIGURED);
+
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -577,13 +785,60 @@ export default function App() {
   const [sort, setSort] = useState("featured");
   const [scrolled, setScrolled] = useState(false);
 
+  // discount quote
+  const [code, setCode] = useState("");
+  const [quote, setQuote] = useState(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState(null);
+  const quoteReq = useRef(0);
+
+  // checkout
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [checkoutError, setCheckoutError] = useState(null);
+
+  // success / order-status route
+  const [sessionId, setSessionId] = useState(() => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get("session_id");
+  });
+
+  /* Load catalog */
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        let products;
+        if (API_CONFIGURED) {
+          products = await api.listAllProducts();
+        } else {
+          products = MOCK_PRODUCTS;
+        }
+        const built = buildCatalog(products);
+        if (!alive) return;
+        setGroups(built);
+        setCollections(["All", ...Array.from(new Set(built.map((g) => g.collection).filter(Boolean)))]);
+        setLoading(false);
+      } catch (e) {
+        if (!alive) return;
+        // Fall back to demo data so the storefront still renders.
+        const built = buildCatalog(MOCK_PRODUCTS);
+        setGroups(built);
+        setCollections(["All", ...Array.from(new Set(built.map((g) => g.collection).filter(Boolean)))]);
+        setDemo(true);
+        setLoadError(e.message);
+        setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // scroll-reveal observer
+  // scroll-reveal observer (re-bind when the grid changes)
   useEffect(() => {
     const els = document.querySelectorAll(".ec-reveal-up");
     const io = new IntersectionObserver(
@@ -592,21 +847,82 @@ export default function App() {
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  });
+  }, [groups]);
 
-  const addToCart = useCallback((product) => {
-    const key = `${product.id}-${product.length}-${product.width}`;
+  const addToCart = useCallback((group, length, width) => {
+    const resolved = group.resolve(length, width);
+    if (!resolved || resolved.available === false) return;
+    const productId = resolved.productId;
+    const price = resolved.price != null ? resolved.price : group.price;
+    const key = `${productId}|${length}|${width}`;
     setCart((c) => {
       const existing = c.find((i) => i.key === key);
       if (existing) return c.map((i) => (i.key === key ? { ...i, qty: i.qty + 1 } : i));
-      return [...c, { ...product, key, qty: 1 }];
+      return [...c, {
+        key, productId, groupKey: group.key, name: group.name, length, width,
+        price, currency: group.currency, qty: 1, swatch: group.swatch,
+        image: getPrimaryImage(group), metal: group.metal,
+      }];
     });
+    // Cart changed — any applied discount is now stale.
+    setQuote(null); setQuoteError(null);
     setCartOpen(true);
   }, []);
 
-  const changeQty = (key, d) =>
+  const changeQty = (key, d) => {
     setCart((c) => c.map((i) => (i.key === key ? { ...i, qty: Math.max(1, i.qty + d) } : i)));
-  const removeItem = (key) => setCart((c) => c.filter((i) => i.key !== key));
+    setQuote(null); setQuoteError(null);
+  };
+  const removeItem = (key) => {
+    setCart((c) => c.filter((i) => i.key !== key));
+    setQuote(null); setQuoteError(null);
+  };
+
+  /* Validate a discount code / refresh the quote against the current cart. */
+  const refreshQuote = useCallback(async (withCode) => {
+    if (demo || cart.length === 0) return;
+    const items = aggregateItems(cart, true);
+    const reqId = ++quoteReq.current;
+    setQuoteLoading(true); setQuoteError(null);
+    try {
+      const data = await api.validateDiscount(withCode, items);
+      if (reqId !== quoteReq.current) return; // a newer request superseded this
+      if (withCode && data.valid === false) setQuoteError(data.error || "That code can’t be applied.");
+      setQuote(data);
+    } catch (e) {
+      if (reqId !== quoteReq.current) return;
+      setQuoteError(e.message);
+    } finally {
+      if (reqId === quoteReq.current) setQuoteLoading(false);
+    }
+  }, [cart, demo]);
+
+  // Surface automatic sales (no code) when the cart opens with items.
+  useEffect(() => {
+    if (cartOpen && !demo && cart.length > 0 && !quote) refreshQuote(code.trim() || undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartOpen]);
+
+  const checkout = useCallback(async () => {
+    if (demo || cart.length === 0) return;
+    setCheckoutBusy(true); setCheckoutError(null);
+    try {
+      const items = aggregateItems(cart, false);
+      const base = window.location.origin + window.location.pathname;
+      // Saved so the success page can show the chosen length/width (Pattern A).
+      localStorage.setItem("eclaire:lastCart", JSON.stringify(cart));
+      const data = await api.createCheckoutSession({
+        items,
+        successUrl: `${base}?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: base,
+        discountCode: quote && quote.valid && quote.discount ? quote.discount.code : undefined,
+      });
+      window.location.href = data.url;
+    } catch (e) {
+      setCheckoutError(e.message);
+      setCheckoutBusy(false);
+    }
+  }, [cart, demo, quote]);
 
   const nav = (where) => {
     setCartOpen(false); setSearchOpen(false);
@@ -614,7 +930,22 @@ export default function App() {
     else document.getElementById(where)?.scrollIntoView({ behavior: "smooth" });
   };
 
-  let shown = filter === "All" ? PRODUCTS : PRODUCTS.filter((p) => p.collection === filter);
+  const leaveOrderView = () => {
+    window.history.replaceState({}, "", window.location.origin + window.location.pathname);
+    setSessionId(null);
+  };
+
+  // Order-status / success route takes over the whole screen.
+  if (sessionId) {
+    return (
+      <div className="ec-root">
+        <Styles />
+        <OrderStatus sessionId={sessionId} onBack={leaveOrderView} />
+      </div>
+    );
+  }
+
+  let shown = filter === "All" ? groups : groups.filter((g) => g.collection === filter);
   if (sort === "low") shown = [...shown].sort((a, b) => a.price - b.price);
   if (sort === "high") shown = [...shown].sort((a, b) => b.price - a.price);
 
@@ -623,21 +954,35 @@ export default function App() {
   return (
     <div className="ec-root">
       <Styles />
+      {demo && (
+        <div className="ec-demo-banner">
+          Demo mode — showing sample products. {loadError ? `(API error: ${loadError}) ` : ""}Set <code>VITE_API_BASE</code> to connect the live store.
+        </div>
+      )}
       <Header count={count} scrolled={scrolled}
         onCart={() => setCartOpen(true)} onSearch={() => setSearchOpen(true)} onNav={nav} />
       <main>
         <Hero onShop={() => nav("shop")} />
         <Marquee />
-        <Shop products={shown} onOpen={setActive} onAdd={addToCart}
-          filter={filter} setFilter={setFilter} sort={sort} setSort={setSort} />
+        {loading ? (
+          <section className="ec-shop" id="shop"><p className="ec-loading">Loading the collection…</p></section>
+        ) : (
+          <Shop groups={shown} onOpen={setActive} onAdd={addToCart}
+            collections={collections} filter={filter} setFilter={setFilter} sort={sort} setSort={setSort} />
+        )}
         <Values />
         <Story />
         <Newsletter />
       </main>
       <Footer onNav={nav} />
-      <ProductModal product={active} onClose={() => setActive(null)} onAdd={addToCart} />
-      <Cart open={cartOpen} items={cart} onClose={() => setCartOpen(false)} onQty={changeQty} onRemove={removeItem} />
-      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} onOpenProduct={setActive} />
+      <ProductModal group={active} onClose={() => setActive(null)} onAdd={addToCart} />
+      <Cart
+        open={cartOpen} items={cart} quote={quote} quoteLoading={quoteLoading} quoteError={quoteError}
+        code={code} setCode={setCode} onApply={() => refreshQuote(code.trim() || undefined)}
+        onClose={() => setCartOpen(false)} onQty={changeQty} onRemove={removeItem}
+        onCheckout={checkout} demo={demo} checkoutError={checkoutError} checkoutBusy={checkoutBusy}
+      />
+      <SearchOverlay open={searchOpen} groups={groups} onClose={() => setSearchOpen(false)} onOpenProduct={setActive} />
     </div>
   );
 }
@@ -665,6 +1010,7 @@ function Styles() {
 *{box-sizing:border-box;margin:0;padding:0}
 .ec-root{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weight:300;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+button:disabled{cursor:not-allowed}
 input,select{font-family:inherit}
 img{display:block;max-width:100%}
 
@@ -682,9 +1028,15 @@ img{display:block;max-width:100%}
 .ec-btn{display:inline-flex;align-items:center;gap:.6em;padding:1rem 1.8rem;border-radius:999px;font-size:.82rem;letter-spacing:.1em;text-transform:uppercase;font-weight:400;transition:.3s}
 .ec-btn-dark{background:var(--ink);color:var(--cream)}
 .ec-btn-dark:hover{background:var(--navy);transform:translateY(-2px);box-shadow:0 14px 30px -12px rgba(26,28,34,.5)}
+.ec-btn-dark:disabled{background:#9a9ca3;transform:none;box-shadow:none;opacity:.8}
 .ec-btn-dark svg{transition:transform .3s}
-.ec-btn-dark:hover svg{transform:translateX(4px)}
+.ec-btn-dark:hover:not(:disabled) svg{transform:translateX(4px)}
 .ec-full{width:100%;justify-content:center}
+
+/* DEMO BANNER */
+.ec-demo-banner{position:relative;z-index:70;background:var(--ink);color:var(--cream);text-align:center;font-size:.76rem;letter-spacing:.04em;padding:.55rem 1rem}
+.ec-demo-banner code{font-family:ui-monospace,monospace;color:var(--champagne)}
+.ec-loading{text-align:center;color:var(--ink-soft);padding:4rem 0;font-family:var(--serif);font-style:italic;font-size:1.2rem}
 
 /* HEADER */
 .ec-header{position:fixed;top:0;left:0;right:0;z-index:60;display:grid;grid-template-columns:1fr 1fr auto 1fr 1fr;align-items:center;gap:1rem;padding:1.5rem clamp(1rem,4vw,3.5rem);transition:.4s}
@@ -754,6 +1106,7 @@ img{display:block;max-width:100%}
 .ec-visual{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .ec-visual-glow{position:absolute;width:75%;height:60%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95),rgba(255,255,255,0) 70%);filter:blur(6px)}
 .ec-visual-svg{position:relative;height:86%;width:auto;z-index:2;filter:drop-shadow(0 6px 16px rgba(60,64,73,.28))}
+.ec-visual-img{position:relative;z-index:2;width:100%;height:100%;object-fit:cover}
 .ec-visual-sheen{position:absolute;top:0;left:-60%;width:50%;height:100%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.7),transparent);transform:skewX(-18deg);transition:left .7s ease;z-index:3;pointer-events:none}
 .ec-card-media:hover .ec-visual-sheen{left:120%}
 
@@ -795,9 +1148,13 @@ img{display:block;max-width:100%}
 .ec-specs dd{font-family:var(--serif);font-size:1.05rem}
 .ec-len{margin-bottom:1.6rem}
 .ec-len-label{font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:.6rem}
-.ec-len-opts{display:flex;gap:.6rem}
-.ec-len-opt{width:54px;height:42px;border-radius:6px;border:1px solid var(--line);font-size:.85rem;transition:.25s}
+.ec-len-opts{display:flex;gap:.6rem;flex-wrap:wrap}
+.ec-len-opt{min-width:54px;height:42px;padding:0 .6rem;border-radius:6px;border:1px solid var(--line);font-size:.85rem;transition:.25s}
 .ec-len-opt.is-on{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.ec-len-opt:disabled{opacity:.35;text-decoration:line-through}
+.ec-stock{font-size:.78rem;margin-bottom:1rem;letter-spacing:.04em}
+.ec-stock.is-low{color:var(--gold)}
+.ec-stock.is-out{color:#b4453c}
 .ec-modal-note{margin-top:1rem;font-size:.76rem;color:var(--ink-soft);text-align:center}
 
 /* CART */
@@ -810,6 +1167,7 @@ img{display:block;max-width:100%}
 .ec-cart-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;color:var(--ink-soft);text-align:center;padding:2rem}
 .ec-cart-empty svg{color:var(--gold);opacity:.6}
 .ec-cart-items{flex:1;overflow:auto;padding:1rem 1.6rem}
+.ec-sale-banner{display:flex;align-items:center;gap:.5rem;background:var(--cream-2);color:var(--gold);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;padding:.6rem .8rem;border-radius:6px;margin-bottom:1rem}
 .ec-cart-item{display:flex;gap:1rem;padding:1.1rem 0;border-bottom:1px solid var(--line)}
 .ec-cart-thumb{width:76px;height:92px;border-radius:5px;overflow:hidden;background:linear-gradient(160deg,#fbfaf6,#e7e2d6);flex-shrink:0}
 .ec-cart-detail{flex:1}
@@ -824,8 +1182,21 @@ img{display:block;max-width:100%}
 .ec-qty span{font-size:.85rem;min-width:14px;text-align:center}
 .ec-cart-price{font-size:.95rem}
 .ec-cart-foot{padding:1.6rem;border-top:1px solid var(--line);background:var(--cream-2)}
-.ec-cart-subtotal{display:flex;justify-content:space-between;font-family:var(--serif);font-size:1.2rem;margin-bottom:.4rem}
-.ec-cart-ship{font-size:.78rem;color:var(--ink-soft);margin-bottom:1.1rem}
+.ec-discount{margin-bottom:1.1rem}
+.ec-discount-row{display:flex;gap:.5rem}
+.ec-discount-row input{flex:1;padding:.7rem 1rem;border-radius:999px;border:1px solid var(--line);background:var(--cream);color:var(--ink);outline:none;font-size:.82rem;letter-spacing:.06em}
+.ec-discount-apply{padding:.7rem 1.2rem;border-radius:999px;border:1px solid var(--ink);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;transition:.25s}
+.ec-discount-apply:hover:not(:disabled){background:var(--ink);color:var(--cream)}
+.ec-discount-apply:disabled{opacity:.4}
+.ec-discount-msg{display:flex;align-items:center;gap:.4rem;font-size:.78rem;margin-top:.5rem}
+.ec-discount-msg.is-err{color:#b4453c}
+.ec-discount-msg.is-ok{color:#3f7d52}
+.ec-cart-lines{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.8rem;font-size:.86rem;color:var(--ink-soft)}
+.ec-cart-line{display:flex;justify-content:space-between}
+.ec-cart-line.is-discount{color:#3f7d52}
+.ec-cart-subtotal{display:flex;justify-content:space-between;font-family:var(--serif);font-size:1.2rem;margin-bottom:1rem;color:var(--ink)}
+.ec-cart-ship{font-size:.78rem;color:var(--ink-soft);margin-top:.6rem;text-align:center}
+.ec-cart-ship code{font-family:ui-monospace,monospace}
 
 /* SEARCH */
 .ec-search-overlay{position:fixed;inset:0;z-index:100;background:rgba(244,241,234,.94);backdrop-filter:blur(10px);padding:clamp(1rem,5vw,4rem);animation:ecFade .25s ease}
@@ -855,6 +1226,29 @@ img{display:block;max-width:100%}
 .ec-news-form .ec-btn-dark{background:var(--cream);color:var(--ink);white-space:nowrap}
 .ec-news-form .ec-btn-dark:hover{background:var(--champagne)}
 .ec-news-done{font-family:var(--serif);font-style:italic;font-size:1.2rem;color:var(--champagne)}
+
+/* ORDER STATUS */
+.ec-order{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:clamp(2rem,6vw,5rem) 1.5rem;background:
+  radial-gradient(ellipse 60% 40% at 50% 0%, rgba(255,255,255,.9), transparent 60%), var(--cream)}
+.ec-order-inner{width:100%;max-width:560px}
+.ec-order-logo{justify-content:center;width:100%;margin-bottom:2rem}
+.ec-order-card{background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:clamp(1.8rem,5vw,3rem);text-align:center;box-shadow:0 30px 70px -40px rgba(26,28,34,.4)}
+.ec-order-card h2{font-family:var(--serif);font-weight:300;font-size:clamp(1.7rem,4vw,2.4rem);margin-bottom:.4rem}
+.ec-order-icon{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:var(--ink);color:var(--champagne);margin-bottom:1.2rem}
+.ec-order-icon.sm{width:42px;height:42px;background:var(--cream-2);color:var(--gold);margin:0}
+.ec-order-state{color:var(--gold);letter-spacing:.04em;margin-bottom:.4rem}
+.ec-order-email{font-size:.88rem;color:var(--ink-soft);margin-bottom:1.6rem}
+.ec-order-loading .ec-news-spark{color:var(--gold)}
+.ec-order-items{text-align:left;border-top:1px solid var(--line);margin-top:1.4rem;padding-top:1.2rem}
+.ec-order-row{display:flex;justify-content:space-between;gap:1rem;padding:.4rem 0;font-size:.92rem;color:var(--ink-soft)}
+.ec-order-total{border-top:1px solid var(--line);margin-top:.6rem;padding-top:.8rem;font-family:var(--serif);font-size:1.15rem;color:var(--ink)}
+.ec-order-selections,.ec-order-ship{text-align:left;margin-top:1.6rem}
+.ec-order-selections h3,.ec-order-ship h3{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:.6rem}
+.ec-order-selections p,.ec-order-ship p{font-size:.9rem;line-height:1.6;color:var(--ink)}
+.ec-order-tracking{display:flex;align-items:center;gap:1rem;text-align:left;background:var(--cream-2);border-radius:8px;padding:1rem;margin-top:1.6rem}
+.ec-order-track-label{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:.2rem}
+.ec-order-tracking a{font-family:var(--serif);font-size:1.05rem;color:var(--ink);word-break:break-all}
+.ec-order-card .ec-btn{margin-top:1.8rem}
 
 /* FOOTER */
 .ec-footer{background:var(--cream-2);padding:clamp(3rem,6vw,5rem) clamp(1rem,4vw,3.5rem) 2rem}
