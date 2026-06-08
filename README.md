@@ -6,7 +6,7 @@ A luxury jewelry commerce platform, organized as a monorepo:
 .
 ├── storefront/   # Customer-facing storefront (React + Vite static site)
 ├── api/          # Commerce API — Cloudflare Workers (Hono) + D1 + R2
-└── admin/        # Admin portal (placeholder — frontend to be built)
+└── admin/        # Admin portal (React + Vite static site)
 ```
 
 ## Components
@@ -29,9 +29,11 @@ See [`api/README.md`](api/README.md) for the full endpoint reference and
 deployment steps.
 
 ### `admin/` — admin portal
-A placeholder for the internal dashboard (add products, manage orders, etc.).
-The backend it depends on already exists in `api/`. See
-[`admin/README.md`](admin/README.md).
+The internal dashboard (React + Vite): an **overview** (revenue, orders, units,
+unfulfilled count, charts), **products** (create / edit / delete, image upload),
+and **orders** (status, fulfillment, tracking). Sign-in uses the API worker's
+`ADMIN_API_KEY` — there is no separate user database. Deploys as a static site
+behind your own access controls. See [`admin/README.md`](admin/README.md).
 
 ## How they connect
 

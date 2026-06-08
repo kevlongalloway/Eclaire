@@ -37,6 +37,8 @@ Money is always an **integer in the smallest currency unit** (cents).
 
 | Method | Path | Description |
 |---|---|---|
+| `GET` | `/admin/auth/check` | Returns 200 only when the admin key is valid (login check). |
+| `GET` | `/admin/stats` | Overview aggregates: revenue, orders, units, product counts, 14-day series, recent orders. |
 | `GET` | `/admin/products?q=&limit=&offset=` | List all products (incl. inactive). |
 | `POST` | `/admin/products` | Create a product. |
 | `GET` / `PATCH` / `DELETE` | `/admin/products/:id` | Read / update / delete a product. |

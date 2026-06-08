@@ -7,6 +7,7 @@ import { publicProducts, adminProducts } from "./routes/products";
 import { publicImages, adminImages } from "./routes/images";
 import { publicDiscounts, adminDiscounts } from "./routes/discounts";
 import { publicOrders, adminOrders } from "./routes/orders";
+import { adminStats } from "./routes/stats";
 import { checkout } from "./routes/checkout";
 import { webhooks } from "./routes/webhooks";
 
@@ -44,6 +45,9 @@ app.route("/webhooks", webhooks);
 /* ------------------------- admin routes (protected) ------------------------ */
 const admin = new Hono<{ Bindings: Env }>();
 admin.use("*", requireAdmin);
+// Login verification: returns 200 only when the admin key is valid.
+admin.get("/auth/check", (c) => c.json({ ok: true, data: { authenticated: true } }));
+admin.route("/stats", adminStats);
 admin.route("/products", adminProducts);
 admin.route("/images", adminImages);
 admin.route("/discounts", adminDiscounts);
