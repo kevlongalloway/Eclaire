@@ -3,28 +3,33 @@ import type { Env } from "../types";
 import { rowToProduct, nowIso } from "../lib/db";
 import { newId, slugify } from "../lib/id";
 import { fail, ok } from "../lib/response";
+import { resolvePublicStore } from "../lib/store";
 
 /* ----------------------------- public routes ----------------------------- */
 export const publicProducts = new Hono<{ Bindings: Env }>();
 
-// GET /products?limit=&offset=  — only active products, newest first.
+// GET /products?limit=&offset=  — only active products for this store, newest first.
 publicProducts.get("/", async (c) => {
+  const store = await resolvePublicStore(c);
+  if (!store) return ok(c, []); // unknown store slug ⇒ empty catalog
   const limit = clampInt(c.req.query("limit"), 100, 1, 200);
   const offset = clampInt(c.req.query("offset"), 0, 0, 1_000_000);
   const { results } = await c.env.DB.prepare(
-    `SELECT * FROM products WHERE active = 1 ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+    `SELECT * FROM products WHERE active = 1 AND store_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`,
   )
-    .bind(limit, offset)
+    .bind(store.id, limit, offset)
     .all();
   return ok(c, results.map((r) => rowToProduct(r as never)));
 });
 
 // GET /products/:id
 publicProducts.get("/:id", async (c) => {
+  const store = await resolvePublicStore(c);
+  if (!store) return fail(c, "Product not found.", 404);
   const row = await c.env.DB.prepare(
-    `SELECT * FROM products WHERE id = ? AND active = 1`,
+    `SELECT * FROM products WHERE id = ? AND active = 1 AND store_id = ?`,
   )
-    .bind(c.req.param("id"))
+    .bind(c.req.param("id"), store.id)
     .first();
   if (!row) return fail(c, "Product not found.", 404);
   return ok(c, rowToProduct(row as never));
@@ -33,23 +38,31 @@ publicProducts.get("/:id", async (c) => {
 /* ------------------------------ admin routes ------------------------------ */
 export const adminProducts = new Hono<{ Bindings: Env }>();
 
-// GET /admin/products — includes inactive; optional ?q= search.
+// GET /admin/products — includes inactive; optional ?q= search and ?store_id= filter.
 adminProducts.get("/", async (c) => {
   const limit = clampInt(c.req.query("limit"), 100, 1, 500);
   const offset = clampInt(c.req.query("offset"), 0, 0, 1_000_000);
   const q = c.req.query("q");
-  let stmt;
+  const storeId = str(c.req.query("store_id"));
+
+  const where: string[] = [];
+  const binds: unknown[] = [];
   if (q) {
-    const like = `%${q}%`;
-    stmt = c.env.DB.prepare(
-      `SELECT * FROM products WHERE name LIKE ? OR id LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-    ).bind(like, like, limit, offset);
-  } else {
-    stmt = c.env.DB.prepare(
-      `SELECT * FROM products ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-    ).bind(limit, offset);
+    where.push(`(name LIKE ? OR id LIKE ?)`);
+    binds.push(`%${q}%`, `%${q}%`);
   }
-  const { results } = await stmt.all();
+  if (storeId) {
+    where.push(`store_id = ?`);
+    binds.push(storeId);
+  }
+  const clause = where.length ? `WHERE ${where.join(" AND ")} ` : "";
+  binds.push(limit, offset);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT * FROM products ${clause}ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+  )
+    .bind(...binds)
+    .all();
   return ok(c, results.map((r) => rowToProduct(r as never)));
 });
 
@@ -77,8 +90,8 @@ adminProducts.post("/", async (c) => {
 
   try {
     await c.env.DB.prepare(
-      `INSERT INTO products (id, name, description, price, currency, active, stock, images, metadata, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO products (id, name, description, price, currency, active, stock, images, metadata, store_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         id,
@@ -90,6 +103,7 @@ adminProducts.post("/", async (c) => {
         int(body.stock) ?? -1,
         JSON.stringify(asStringArray(body.images)),
         JSON.stringify(asObject(body.metadata)),
+        str(body.store_id) || "store_default",
         now,
         now,
       )
@@ -130,6 +144,7 @@ adminProducts.patch("/:id", async (c) => {
   if (body.stock !== undefined) set("stock", int(body.stock) ?? -1);
   if (body.images !== undefined) set("images", JSON.stringify(asStringArray(body.images)));
   if (body.metadata !== undefined) set("metadata", JSON.stringify(asObject(body.metadata)));
+  if (body.store_id !== undefined) set("store_id", str(body.store_id) || "store_default");
 
   if (!sets.length) return fail(c, "No updatable fields provided.");
   set("updated_at", nowIso());

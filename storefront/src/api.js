@@ -12,11 +12,20 @@
 
 const BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
 
+/* Which store this storefront deploy represents. The API resolves it to a
+   store via X-Store-Slug; leave blank to use the API's default store. */
+const STORE = (import.meta.env.VITE_STORE_SLUG || "").trim();
+
 export const API_CONFIGURED = Boolean(BASE);
+
+/* Headers every API call sends, including the store slug when configured. */
+function storeHeaders() {
+  return STORE ? { "X-Store-Slug": STORE } : {};
+}
 
 /* Core request helper — unwraps the { ok, data } envelope and throws on error. */
 async function request(path, opts = {}) {
-  const headers = { ...(opts.headers || {}) };
+  const headers = { ...storeHeaders(), ...(opts.headers || {}) };
   if (opts.body != null) headers["Content-Type"] = "application/json";
 
   const res = await fetch(`${BASE}${path}`, { ...opts, headers });
@@ -75,7 +84,9 @@ export const api = {
   /* GET /orders?session_id= — returns the order, or null while the webhook
      is still processing (the API answers 404 until the order exists). */
   async getOrderBySession(sessionId) {
-    const res = await fetch(`${BASE}/orders?session_id=${encodeURIComponent(sessionId)}`);
+    const res = await fetch(`${BASE}/orders?session_id=${encodeURIComponent(sessionId)}`, {
+      headers: storeHeaders(),
+    });
     let body = null;
     try {
       body = await res.json();

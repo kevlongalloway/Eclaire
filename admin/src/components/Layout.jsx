@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
+import { useStore } from "../store-context.jsx";
 import ChangePassword from "./ChangePassword.jsx";
 
 const NAV = [
   { to: "/", label: "Overview", end: true, icon: GridIcon },
+  { to: "/stores", label: "Stores", icon: StoreIcon },
   { to: "/products", label: "Products", icon: TagIcon },
   { to: "/orders", label: "Orders", icon: BoxIcon },
 ];
@@ -26,6 +28,8 @@ export default function Layout({ children }) {
           <span className="ad-brand-name">Éclaire</span>
           <span className="ad-brand-tag">Admin</span>
         </div>
+
+        <StoreSwitcher />
 
         <nav className="ad-nav">
           {NAV.map((item) => (

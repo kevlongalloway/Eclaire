@@ -1,11 +1,13 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth.jsx";
+import { StoreProvider } from "./store-context.jsx";
 import { API_CONFIGURED } from "./api";
 import Login from "./components/Login.jsx";
 import Layout from "./components/Layout.jsx";
 import Overview from "./pages/Overview.jsx";
 import Products from "./pages/Products.jsx";
 import Orders from "./pages/Orders.jsx";
+import Stores from "./pages/Stores.jsx";
 
 export default function App() {
   const { isAuthed } = useAuth();
@@ -25,14 +27,18 @@ export default function App() {
 
   if (!isAuthed) return <Login />;
 
+  // StoreProvider lives inside the authed area so stores only load once signed in.
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Overview />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/orders" element={<Orders />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Layout>
+    <StoreProvider>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Overview />} />
+          <Route path="/stores" element={<Stores />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Layout>
+    </StoreProvider>
   );
 }

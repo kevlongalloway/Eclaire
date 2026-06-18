@@ -21,6 +21,11 @@ services:
       # time — a redeploy is required after changing it. Leave unset for demo mode.
       - key: VITE_API_BASE
         sync: false
+      # The slug of the store this storefront serves (multi-store). Must match a
+      # store created in the admin Stores page; sent to the API as X-Store-Slug.
+      # Leave blank to use the API's default store. Read at BUILD time.
+      - key: VITE_STORE_SLUG
+        sync: false
     routes:
       - type: rewrite
         source: /*

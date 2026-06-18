@@ -4,6 +4,7 @@ import { rowToProduct } from "../lib/db";
 import { quoteCart, type QuoteItem } from "../lib/discounts";
 import { createCheckoutSession, type CheckoutLineItem } from "../lib/stripe";
 import { fail, ok } from "../lib/response";
+import { resolvePublicStore } from "../lib/store";
 
 export const checkout = new Hono<{ Bindings: Env }>();
 
@@ -28,13 +29,18 @@ checkout.post("/session", async (c) => {
   const cancelUrl = String(body.cancelUrl ?? "");
   if (!successUrl || !cancelUrl) return fail(c, "`successUrl` and `cancelUrl` are required.");
 
-  // Load the authoritative products.
+  // Resolve which store this checkout belongs to.
+  const store = await resolvePublicStore(c);
+  if (!store) return fail(c, "Unknown store.", 404);
+
+  // Load the authoritative products — scoped to this store so a cart can't
+  // mix in another store's products.
   const ids = wanted.map((i: { productId: string }) => i.productId);
   const placeholders = ids.map(() => "?").join(",");
   const { results } = await c.env.DB.prepare(
-    `SELECT * FROM products WHERE id IN (${placeholders})`,
+    `SELECT * FROM products WHERE id IN (${placeholders}) AND store_id = ?`,
   )
-    .bind(...ids)
+    .bind(...ids, store.id)
     .all();
   const byId = new Map(results.map((r) => [String((r as any).id), rowToProduct(r as never)]));
 
@@ -56,7 +62,7 @@ checkout.post("/session", async (c) => {
     typeof body.discountCode === "string" && body.discountCode.trim()
       ? body.discountCode.trim()
       : undefined;
-  const quote = await quoteCart(c.env, quoteItems, discountCode);
+  const quote = await quoteCart(c.env, quoteItems, discountCode, store.id);
   if (discountCode && !quote.valid) {
     return fail(c, quote.error || "That discount code can't be applied.");
   }
@@ -75,6 +81,7 @@ checkout.post("/session", async (c) => {
         cart: cartMeta.slice(0, 480),
         discount_code: quote.discount?.code ?? "",
         amount_discount: String(quote.discount_amount),
+        store: store.id,
       },
     });
     return ok(c, { url: session.url, sessionId: session.id });
