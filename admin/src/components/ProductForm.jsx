@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { api, centsToDollars, dollarsToCents } from "../api";
 import Modal from "./Modal.jsx";
+import VariationsEditor from "./VariationsEditor.jsx";
 
 /**
  * Create/edit form for a product. `product` null ⇒ create. Calls onSaved(saved)
@@ -15,9 +16,7 @@ export default function ProductForm({ product, onClose, onSaved }) {
   const [stock, setStock] = useState(product ? String(product.stock) : "-1");
   const [active, setActive] = useState(product ? product.active : true);
   const [images, setImages] = useState(product?.images ?? []);
-  const [metaText, setMetaText] = useState(
-    JSON.stringify(product?.metadata ?? {}, null, 2),
-  );
+  const [metadata, setMetadata] = useState(product?.metadata ?? {});
 
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -52,15 +51,8 @@ export default function ProductForm({ product, onClose, onSaved }) {
     if (!name.trim()) return setError("Name is required.");
     if (cents == null || cents < 0) return setError("Enter a valid price.");
 
-    let metadata = {};
-    if (metaText.trim()) {
-      try {
-        metadata = JSON.parse(metaText);
-        if (typeof metadata !== "object" || Array.isArray(metadata)) throw new Error();
-      } catch {
-        return setError("Metadata must be a valid JSON object.");
-      }
-    }
+    const meta =
+      metadata && typeof metadata === "object" && !Array.isArray(metadata) ? metadata : {};
 
     const payload = {
       name: name.trim(),
@@ -70,7 +62,7 @@ export default function ProductForm({ product, onClose, onSaved }) {
       stock: parseInt(stock, 10),
       active,
       images,
-      metadata,
+      metadata: meta,
     };
     if (Number.isNaN(payload.stock)) payload.stock = -1;
 
@@ -145,20 +137,10 @@ export default function ProductForm({ product, onClose, onSaved }) {
           <input ref={fileRef} type="file" accept="image/*" onChange={onUpload} hidden />
         </div>
 
-        <label className="ad-field">
-          <span>Metadata (JSON)</span>
-          <textarea
-            className="ad-mono"
-            rows={6}
-            value={metaText}
-            onChange={(e) => setMetaText(e.target.value)}
-            spellCheck={false}
-          />
-          <small className="ad-hint">
-            Free-form fields the storefront reads: collection, metal, weight, swatch, tag,
-            lengths/widths or base_product/length/width (variations).
-          </small>
-        </label>
+        <div className="ad-field">
+          <span>Attributes &amp; variations</span>
+          <VariationsEditor value={metadata} onChange={setMetadata} />
+        </div>
 
         {error && <p className="ad-form-error">{error}</p>}
 

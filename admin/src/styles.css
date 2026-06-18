@@ -279,3 +279,91 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; colo
   .ad-account { margin: 0; }
   .ad-grid-2, .ad-order-cols { grid-template-columns: 1fr; }
 }
+
+/* ===== Variations editor ===== */
+.ad-veditor {
+  display: flex; flex-direction: column; gap: 0.4rem;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface-2); padding: 1rem 1.1rem;
+}
+.ad-vsection { padding: 0.5rem 0; border-bottom: 1px solid var(--line); }
+.ad-vsection:last-child { border-bottom: none; padding-bottom: 0; }
+.ad-vsection-title {
+  display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--gold); margin-bottom: 0.5rem;
+}
+.ad-veditor .ad-field { margin-bottom: 0.6rem; }
+
+/* Tag quick-suggest pills */
+.ad-chip-suggest { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.3rem; }
+.ad-chip-mini {
+  font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 999px;
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-soft);
+  cursor: pointer;
+}
+.ad-chip-mini:hover { border-color: var(--gold); color: var(--ink); }
+
+/* Swatch colour control */
+.ad-swatch-row { display: flex; gap: 0.4rem; align-items: stretch; }
+.ad-swatch-color {
+  width: 38px; padding: 0; border: 1px solid var(--line-strong); border-radius: 8px;
+  background: var(--surface); cursor: pointer; flex: 0 0 auto;
+}
+.ad-swatch-hex { flex: 1; min-width: 0; }
+.ad-hint-warn { color: var(--red); }
+
+/* Variation option (length / width) editors */
+.ad-opt {
+  display: flex; flex-direction: column; gap: 0.45rem;
+  padding: 0.65rem 0; border-top: 1px dashed var(--line);
+}
+.ad-opt:first-of-type { border-top: none; }
+.ad-opt-label { font-size: 0.78rem; font-weight: 600; color: var(--ink-soft); }
+.ad-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; min-height: 1.6rem; }
+.ad-chips-empty { font-size: 0.78rem; color: var(--ink-soft); font-style: italic; }
+.ad-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.2rem 0.4rem 0.2rem 0.3rem; border-radius: 999px;
+  border: 1px solid var(--line-strong); background: var(--surface); font-size: 0.8rem;
+}
+.ad-chip.is-default { border-color: var(--gold); background: var(--gold-soft); }
+.ad-chip-text { font-weight: 500; }
+.ad-chip-star {
+  border: none; background: none; cursor: pointer; color: var(--ink-soft);
+  font-size: 0.9rem; line-height: 1; padding: 0;
+}
+.ad-chip.is-default .ad-chip-star { color: var(--gold); }
+.ad-chip-x {
+  border: none; background: none; cursor: pointer; color: var(--ink-soft);
+  font-size: 0.7rem; line-height: 1; padding: 0 0.1rem;
+}
+.ad-chip-x:hover { color: var(--red); }
+.ad-opt-add { display: flex; gap: 0.4rem; }
+.ad-opt-add input {
+  flex: 0 1 160px; padding: 0.4rem 0.6rem; border: 1px solid var(--line-strong);
+  border-radius: 8px; background: var(--surface); font: inherit;
+}
+.ad-opt-add input:focus { outline: none; border-color: var(--gold); }
+
+/* Additional key/value editor */
+.ad-kv-list { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.5rem; }
+.ad-kv-row { display: flex; gap: 0.4rem; align-items: center; }
+.ad-kv-key, .ad-kv-val {
+  padding: 0.4rem 0.6rem; border: 1px solid var(--line-strong); border-radius: 8px;
+  background: var(--surface); font: inherit;
+}
+.ad-kv-key { flex: 0 0 34%; }
+.ad-kv-val { flex: 1; min-width: 0; }
+.ad-kv-key:focus, .ad-kv-val:focus { outline: none; border-color: var(--gold); }
+
+/* Raw JSON escape hatch */
+.ad-raw-toggle {
+  border: none; background: none; cursor: pointer; padding: 0;
+  font-size: 0.8rem; font-weight: 600; color: var(--gold);
+}
+.ad-raw-wrap { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.5rem; }
+.ad-raw-text {
+  width: 100%; padding: 0.6rem 0.7rem; border: 1px solid var(--line-strong);
+  border-radius: 8px; background: var(--surface); resize: vertical;
+}
+.ad-raw-text:focus { outline: none; border-color: var(--gold); }
