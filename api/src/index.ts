@@ -27,7 +27,8 @@ app.use(
       return origin && allowed.includes(origin) ? origin : "";
     },
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    // X-Store-Slug: storefront declares its store. X-Admin-Store: admin's selected store.
+    allowHeaders: ["Content-Type", "Authorization", "X-Store-Slug", "X-Admin-Store"],
     maxAge: 86400,
   }),
 );
