@@ -8,10 +8,10 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "db:migrate:local": "wrangler d1 migrations apply eclaire --local",
-    "db:migrate": "wrangler d1 migrations apply eclaire --remote",
-    "db:seed:local": "wrangler d1 execute eclaire --local --file=./seeds/seed.sql",
-    "db:seed": "wrangler d1 execute eclaire --remote --file=./seeds/seed.sql",
+    "db:migrate:local": "wrangler d1 migrations apply eclairedb --local",
+    "db:migrate": "wrangler d1 migrations apply eclairedb --remote",
+    "db:seed:local": "wrangler d1 execute eclairedb --local --file=./seeds/seed.sql",
+    "db:seed": "wrangler d1 execute eclairedb --remote --file=./seeds/seed.sql",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
