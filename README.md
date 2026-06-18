@@ -56,6 +56,17 @@ Each component is self-contained — see its README:
 - API: [`api/README.md`](api/README.md)
 - Admin: [`admin/README.md`](admin/README.md)
 
+## Multi-store
+
+The platform is multi-store: a single API + D1 backs several independent
+storefronts. Stores are created in the admin **Stores** page; the sidebar store
+switcher scopes the whole dashboard (Overview / Products / Orders) to the
+selected store. Each storefront deploy sets `VITE_STORE_SLUG` to its store's
+slug (sent to the API as `X-Store-Slug`); leave it blank to use the built-in
+`default` store. Run the multi-store migration with `cd api && npm run db:migrate`
+— existing data is backfilled to the default store. See
+**[`DEPLOYMENT.md`](DEPLOYMENT.md)** for details.
+
 ## Deployment
 
 The API runs on **Cloudflare Workers** (with D1 + R2); both frontends run on
