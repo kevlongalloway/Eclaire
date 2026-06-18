@@ -52,8 +52,12 @@ export async function quoteCart(
   env: Env,
   items: QuoteItem[],
   code?: string,
+  storeId?: string | null,
 ): Promise<DiscountQuote> {
   const now = Date.now();
+  // Resolve which store's discounts apply. When unspecified, fall back to the
+  // default store so single-store deployments keep working unchanged.
+  const scopeId = storeId || "store_default";
 
   // Re-read authoritative unit prices so a tampered client can't move totals.
   let subtotal = 0;
@@ -72,10 +76,13 @@ export async function quoteCart(
     }
   }
 
-  // Load every active automatic sale and the requested code (if any).
+  // Load every active automatic sale for this store and the requested code (if
+  // any). Legacy rows with a NULL store_id are treated as the default store.
   const { results: autoRows } = await env.DB.prepare(
-    `SELECT * FROM discounts WHERE automatic = 1 AND active = 1`,
-  ).all();
+    `SELECT * FROM discounts WHERE automatic = 1 AND active = 1 AND COALESCE(store_id, 'store_default') = ?`,
+  )
+    .bind(scopeId)
+    .all();
   const automatic = autoRows
     .map((r) => rowToDiscount(r as never))
     .filter((d) => usable(d, now, subtotal));
@@ -95,9 +102,9 @@ export async function quoteCart(
 
   if (code) {
     const row = await env.DB.prepare(
-      `SELECT * FROM discounts WHERE code = ? COLLATE NOCASE`,
+      `SELECT * FROM discounts WHERE code = ? COLLATE NOCASE AND COALESCE(store_id, 'store_default') = ?`,
     )
-      .bind(code.trim())
+      .bind(code.trim(), scopeId)
       .first();
     if (!row) {
       error = "That code isn't valid.";

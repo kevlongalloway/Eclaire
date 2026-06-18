@@ -246,3 +246,25 @@ testing — it allows any origin.)
 | Name | Required | Purpose |
 |---|---|---|
 | `VITE_API_BASE` | yes | Base URL of the API worker (no trailing slash). Read at build time. |
+| `VITE_STORE_SLUG` | storefront only | Slug of the store this storefront serves (multi-store). Sent as `X-Store-Slug`. Blank = the API's default store. Read at build time. |
+
+---
+
+## Multi-store
+
+The platform is multi-store: one API + D1 can back several independent
+storefronts.
+
+- **Create stores in the admin.** Sign in and open the **Stores** page to add a
+  store (name, slug, currency). The store switcher in the sidebar scopes the
+  whole dashboard — Overview, Products, and Orders — to the selected store, and
+  new products/discounts are assigned to it. "Open store →" selects a store and
+  jumps to its overview.
+- **Point each storefront at its store.** Set `VITE_STORE_SLUG` on each
+  storefront deploy to that store's slug. The storefront sends it as the
+  `X-Store-Slug` header so products, discounts, and checkout are scoped to the
+  store. Leave it blank to use the built-in `default` store.
+- **Migrate.** Multi-store schema ships in `api/migrations/0003_stores.sql`
+  (a `stores` table plus `store_id` columns on products/orders/discounts).
+  Apply it with `cd api && npm run db:migrate`. Existing data is backfilled to
+  the `default` store, so single-store deployments keep working unchanged.

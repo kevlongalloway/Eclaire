@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
+import { useStore } from "../store-context.jsx";
 import ChangePassword from "./ChangePassword.jsx";
 
 const NAV = [
   { to: "/", label: "Overview", end: true, icon: GridIcon },
+  { to: "/stores", label: "Stores", icon: StoreIcon },
   { to: "/products", label: "Products", icon: TagIcon },
   { to: "/orders", label: "Orders", icon: BoxIcon },
 ];
@@ -26,6 +28,8 @@ export default function Layout({ children }) {
           <span className="ad-brand-name">Éclaire</span>
           <span className="ad-brand-tag">Admin</span>
         </div>
+
+        <StoreSwitcher />
 
         <nav className="ad-nav">
           {NAV.map((item) => (
@@ -74,7 +78,42 @@ export default function Layout({ children }) {
   );
 }
 
+/* ---- store switcher ---- */
+function StoreSwitcher() {
+  const { stores, currentStore, currentStoreId, selectStore, loading } = useStore();
+
+  return (
+    <div className="ms-switcher">
+      <span className="ms-switcher-label">Store</span>
+      <div className="ms-switcher-control">
+        <StoreIcon />
+        <select
+          className="ms-switcher-select"
+          value={currentStoreId || ""}
+          onChange={(e) => selectStore(e.target.value || null)}
+          disabled={loading || stores.length === 0}
+        >
+          {loading && <option value="">Loading…</option>}
+          {!loading && stores.length === 0 && <option value="">No stores</option>}
+          {stores.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      </div>
+      {currentStore && <span className="ms-switcher-slug">/{currentStore.slug}</span>}
+    </div>
+  );
+}
+
 /* ---- inline icons (no dependency) ---- */
+function StoreIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M3 9 4.5 4h15L21 9M3 9v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9M3 9h18" />
+      <path d="M8 9v3a2 2 0 0 1-4 0V9m8 0v3a2 2 0 0 1-4 0V9m8 0v3a2 2 0 0 1-4 0V9" />
+    </svg>
+  );
+}
 function GridIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">

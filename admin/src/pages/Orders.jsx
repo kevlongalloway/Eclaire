@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, formatPrice, formatDate } from "../api";
 import Modal from "../components/Modal.jsx";
+import { useStore } from "../store-context.jsx";
 import { PageError } from "./Overview.jsx";
 
 const FILTERS = ["", "unfulfilled", "processing", "shipped", "delivered"];
 
 export default function Orders() {
+  const { currentStore, currentStoreId } = useStore();
   const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,8 @@ export default function Orders() {
 
   useEffect(() => {
     load(filter);
-  }, [filter, load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, load, currentStoreId]);
 
   function onUpdated(updated) {
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o)));
@@ -40,7 +43,10 @@ export default function Orders() {
     <div className="ad-page">
       <header className="ad-page-head">
         <h1>Orders</h1>
-        <p className="ad-page-sub">{orders.length} order{orders.length === 1 ? "" : "s"}</p>
+        <p className="ad-page-sub">
+          {orders.length} order{orders.length === 1 ? "" : "s"}
+          {currentStore ? ` · ${currentStore.name}` : ""}
+        </p>
       </header>
 
       <div className="ad-toolbar">

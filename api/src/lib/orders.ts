@@ -21,6 +21,7 @@ export async function createOrderFromSession(env: Env, session: any): Promise<st
   const shipping = session.shipping_details || session.customer_details || {};
   const addr = shipping.address || {};
   const meta = session.metadata || {};
+  const storeId = typeof meta.store === "string" && meta.store ? meta.store : "store_default";
 
   // Reconstruct line items: prefer our cart metadata (keeps real product ids),
   // fall back to Stripe's expanded line_items.
@@ -71,8 +72,8 @@ export async function createOrderFromSession(env: Env, session: any): Promise<st
       `INSERT INTO orders (id, session_id, payment_intent, status, fulfillment_status, customer_email,
         amount_subtotal, amount_discount, amount_total, currency, discount_code,
         shipping_name, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state,
-        shipping_postal_code, shipping_country, created_at, updated_at)
-       VALUES (?, ?, ?, 'paid', 'unfulfilled', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        shipping_postal_code, shipping_country, store_id, created_at, updated_at)
+       VALUES (?, ?, ?, 'paid', 'unfulfilled', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).bind(
       orderId,
       sessionId,
@@ -90,6 +91,7 @@ export async function createOrderFromSession(env: Env, session: any): Promise<st
       addr.state ?? null,
       addr.postal_code ?? null,
       addr.country ?? null,
+      storeId,
       now,
       now,
     ),

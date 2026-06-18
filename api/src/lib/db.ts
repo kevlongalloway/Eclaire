@@ -11,6 +11,7 @@ interface ProductRow {
   stock: number;
   images: string;
   metadata: string;
+  store_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +36,7 @@ export function rowToProduct(row: ProductRow): Product {
     stock: row.stock,
     images: safeJson<string[]>(row.images, []),
     metadata: safeJson<Record<string, unknown>>(row.metadata, {}),
+    store_id: row.store_id ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -55,6 +57,7 @@ interface DiscountRow {
   ends_at: string | null;
   usage_limit: number | null;
   usage_count: number;
+  store_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -75,6 +78,7 @@ export function rowToDiscount(row: DiscountRow): Discount {
     ends_at: row.ends_at,
     usage_limit: row.usage_limit,
     usage_count: row.usage_count,
+    store_id: row.store_id ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
