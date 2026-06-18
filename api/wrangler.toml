@@ -40,7 +40,7 @@ preview_bucket_name = "eclaire-media"
 # Deploy with:  wrangler deploy --env production
 # ---------------------------------------------------------------------------
 [env.production]
-vars = { CORS_ORIGINS = "https://your-storefront.example,https://admin.your-domain.example", PUBLIC_BASE_URL = "https://eclaire-api.your-subdomain.workers.dev" }
+vars = { CORS_ORIGINS = "https://eclaire.onrender.com,https://eclaire-admin.onrender.com", PUBLIC_BASE_URL = "https://eclaire-api.your-subdomain.workers.dev" }
 
 [[env.production.d1_databases]]
 binding = "DB"
