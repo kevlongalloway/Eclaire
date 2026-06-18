@@ -44,7 +44,7 @@ vars = { CORS_ORIGINS = "https://your-storefront.example,https://admin.your-doma
 
 [[env.production.d1_databases]]
 binding = "DB"
-database_name = "eclaire"
+database_name = "eclairedb"
 database_id = "3ddc5e14-0c04-492b-86d2-138c3139dcab"
 migrations_dir = "migrations"
 
