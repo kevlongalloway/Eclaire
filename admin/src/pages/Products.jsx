@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, formatPrice } from "../api";
 import ProductForm from "../components/ProductForm.jsx";
+import { useStore } from "../store-context.jsx";
 import { PageError } from "./Overview.jsx";
 
 export default function Products() {
+  const { currentStore, currentStoreId } = useStore();
   const [products, setProducts] = useState([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -24,9 +26,11 @@ export default function Products() {
     }
   }, []);
 
+  // Reload when the selected store changes (api.js scopes by the selected store).
   useEffect(() => {
-    load();
-  }, [load]);
+    load(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load, currentStoreId]);
 
   // Debounced search.
   useEffect(() => {
@@ -62,7 +66,10 @@ export default function Products() {
       <header className="ad-page-head ad-page-head-row">
         <div>
           <h1>Products</h1>
-          <p className="ad-page-sub">{products.length} product{products.length === 1 ? "" : "s"}</p>
+          <p className="ad-page-sub">
+            {products.length} product{products.length === 1 ? "" : "s"}
+            {currentStore ? ` · ${currentStore.name}` : ""}
+          </p>
         </div>
         <button className="ad-btn ad-btn-primary" onClick={() => setEditing("new")}>+ New product</button>
       </header>

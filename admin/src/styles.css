@@ -279,3 +279,88 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; colo
   .ad-account { margin: 0; }
   .ad-grid-2, .ad-order-cols { grid-template-columns: 1fr; }
 }
+
+/* ===== Multi-store ===== */
+.ms-switcher {
+  margin: 0 0 1rem;
+  padding: 0 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.ms-switcher-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.ms-switcher-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.45rem 0.6rem;
+  color: var(--ink-soft);
+}
+.ms-switcher-select {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ink);
+  cursor: pointer;
+  outline: none;
+}
+.ms-switcher-slug {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  font-family: var(--mono, ui-monospace, monospace);
+  padding-left: 0.15rem;
+}
+.ms-slug {
+  background: var(--surface-2);
+  padding: 0.1rem 0.4rem;
+  border-radius: 5px;
+  font-size: 0.82rem;
+}
+.ms-row-current {
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+}
+.ms-current-pill {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--gold);
+  color: #fff;
+  vertical-align: middle;
+}
+.ms-hint {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.ms-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ms-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 900px) {
+  .ms-switcher {
+    margin: 0 0.5rem 0 0;
+    flex-direction: row;
+    align-items: center;
+  }
+}

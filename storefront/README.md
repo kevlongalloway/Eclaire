@@ -35,6 +35,20 @@ When `VITE_API_BASE` is unset (or the API is unreachable), the app falls back
 to demo mode: products render from mock data, but checkout and discount codes
 are disabled.
 
+### Multi-store: `VITE_STORE_SLUG`
+
+The API is multi-store. Set `VITE_STORE_SLUG` to the slug of the store this
+storefront represents (create the store in the admin **Stores** page). It is
+sent to the API as the `X-Store-Slug` header so products, discounts, and
+checkout are scoped to that store:
+
+```
+VITE_STORE_SLUG=default
+```
+
+Leave it blank to use the API's default store. Like `VITE_API_BASE`, it is read
+at **build time**, so redeploy after changing it.
+
 ### What's wired up
 
 | Feature | Endpoint | Where |

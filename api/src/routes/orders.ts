@@ -28,18 +28,26 @@ adminOrders.get("/", async (c) => {
   const limit = Math.min(500, Math.max(1, parseInt(c.req.query("limit") ?? "100", 10) || 100));
   const offset = Math.max(0, parseInt(c.req.query("offset") ?? "0", 10) || 0);
   const status = c.req.query("fulfillment_status");
+  const storeId = c.req.query("store_id");
 
-  let stmt;
+  const where: string[] = [];
+  const binds: unknown[] = [];
   if (status) {
-    stmt = c.env.DB.prepare(
-      `SELECT * FROM orders WHERE fulfillment_status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-    ).bind(status, limit, offset);
-  } else {
-    stmt = c.env.DB.prepare(
-      `SELECT * FROM orders ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-    ).bind(limit, offset);
+    where.push(`fulfillment_status = ?`);
+    binds.push(status);
   }
-  const { results } = await stmt.all();
+  if (storeId) {
+    where.push(`store_id = ?`);
+    binds.push(storeId);
+  }
+  const clause = where.length ? `WHERE ${where.join(" AND ")} ` : "";
+  binds.push(limit, offset);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT * FROM orders ${clause}ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+  )
+    .bind(...binds)
+    .all();
   return ok(c, results);
 });
 

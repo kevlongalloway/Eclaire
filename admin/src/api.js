@@ -14,10 +14,16 @@ const BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
 export const API_CONFIGURED = Boolean(BASE);
 
 let token = null;
+let storeId = null;
 let onUnauthorized = null;
 
 export function setToken(t) {
   token = t || null;
+}
+/* The currently selected store. When set, list/stats calls are scoped to it and
+   create calls default new records to it. Mirrors setToken. */
+export function setStoreId(id) {
+  storeId = id || null;
 }
 export function setUnauthorizedHandler(fn) {
   onUnauthorized = fn;
@@ -28,6 +34,7 @@ async function request(path, opts = {}) {
 
   const headers = { ...(opts.headers || {}) };
   if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (storeId) headers["X-Admin-Store"] = storeId;
   if (opts.body != null && !(opts.body instanceof FormData) && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
@@ -84,21 +91,42 @@ export const api = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
 
+  /* Stores */
+  listStores: () => request(`/admin/stores`),
+  getStore: (id) => request(`/admin/stores/${encodeURIComponent(id)}`),
+  createStore: (data) => request(`/admin/stores`, { method: "POST", body: JSON.stringify(data) }),
+  updateStore: (id, data) =>
+    request(`/admin/stores/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) }),
+  deleteStore: (id) =>
+    request(`/admin/stores/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
   /* Overview */
-  getStats: () => request(`/admin/stats`),
+  getStats: () => request(`/admin/stats${storeQuery()}`),
 
   /* Products */
   listProducts: ({ q = "", limit = 100, offset = 0 } = {}) => {
     const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
     if (q) params.set("q", q);
+    if (storeId) params.set("store_id", storeId);
     return request(`/admin/products?${params.toString()}`);
   },
   getProduct: (id) => request(`/admin/products/${encodeURIComponent(id)}`),
-  createProduct: (data) => request(`/admin/products`, { method: "POST", body: JSON.stringify(data) }),
+  createProduct: (data) =>
+    request(`/admin/products`, { method: "POST", body: JSON.stringify(withStore(data)) }),
   updateProduct: (id, data) =>
     request(`/admin/products/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteProduct: (id) =>
     request(`/admin/products/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  /* Discounts */
+  listDiscounts: () => request(`/admin/discounts${storeQuery()}`),
+  getDiscount: (id) => request(`/admin/discounts/${encodeURIComponent(id)}`),
+  createDiscount: (data) =>
+    request(`/admin/discounts`, { method: "POST", body: JSON.stringify(withStore(data)) }),
+  updateDiscount: (id, data) =>
+    request(`/admin/discounts/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) }),
+  deleteDiscount: (id) =>
+    request(`/admin/discounts/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   /* Images */
   uploadImage: (file) => {
@@ -111,6 +139,7 @@ export const api = {
   listOrders: ({ fulfillment_status = "", limit = 100, offset = 0 } = {}) => {
     const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
     if (fulfillment_status) params.set("fulfillment_status", fulfillment_status);
+    if (storeId) params.set("store_id", storeId);
     return request(`/admin/orders?${params.toString()}`);
   },
   getOrder: (id) => request(`/admin/orders/${encodeURIComponent(id)}`),
@@ -119,6 +148,19 @@ export const api = {
 };
 
 /* --------------------------------- helpers -------------------------------- */
+
+/* "?store_id=<id>" when a store is selected, else "" — for list/stats GETs. */
+function storeQuery() {
+  return storeId ? `?store_id=${encodeURIComponent(storeId)}` : "";
+}
+
+/* Inject the selected store_id into a create body when not already present. */
+function withStore(data) {
+  if (storeId && (data == null || data.store_id == null)) {
+    return { ...(data || {}), store_id: storeId };
+  }
+  return data;
+}
 
 export function formatPrice(amount, currency = "usd") {
   return new Intl.NumberFormat("en-US", {

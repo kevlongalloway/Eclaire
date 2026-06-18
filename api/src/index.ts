@@ -9,6 +9,7 @@ import { publicImages, adminImages } from "./routes/images";
 import { publicDiscounts, adminDiscounts } from "./routes/discounts";
 import { publicOrders, adminOrders } from "./routes/orders";
 import { adminStats } from "./routes/stats";
+import { adminStores } from "./routes/stores";
 import { checkout } from "./routes/checkout";
 import { webhooks } from "./routes/webhooks";
 
@@ -53,6 +54,7 @@ admin.route("/auth", authPublic);
 admin.use("*", requireAdmin);
 admin.route("/auth", authProtected); // /auth/check, /auth/logout, /auth/password
 admin.route("/stats", adminStats);
+admin.route("/stores", adminStores);
 admin.route("/products", adminProducts);
 admin.route("/images", adminImages);
 admin.route("/discounts", adminDiscounts);

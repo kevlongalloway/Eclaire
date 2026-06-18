@@ -4,6 +4,7 @@ import { nowIso, rowToDiscount } from "../lib/db";
 import { newId } from "../lib/id";
 import { quoteCart, type QuoteItem } from "../lib/discounts";
 import { fail, ok } from "../lib/response";
+import { resolvePublicStore } from "../lib/store";
 
 const TYPES = new Set(["percentage", "fixed", "free_shipping"]);
 
@@ -26,7 +27,8 @@ publicDiscounts.post("/validate", async (c) => {
     : [];
 
   const code = typeof body.code === "string" && body.code.trim() ? body.code.trim() : undefined;
-  const quote = await quoteCart(c.env, items, code);
+  const store = await resolvePublicStore(c);
+  const quote = await quoteCart(c.env, items, code, store?.id ?? null);
   return ok(c, quote);
 });
 
@@ -34,9 +36,16 @@ publicDiscounts.post("/validate", async (c) => {
 export const adminDiscounts = new Hono<{ Bindings: Env }>();
 
 adminDiscounts.get("/", async (c) => {
-  const { results } = await c.env.DB.prepare(
-    `SELECT * FROM discounts ORDER BY created_at DESC`,
-  ).all();
+  const storeId = strOrNull(c.req.query("store_id"));
+  let stmt;
+  if (storeId) {
+    stmt = c.env.DB.prepare(
+      `SELECT * FROM discounts WHERE store_id = ? ORDER BY created_at DESC`,
+    ).bind(storeId);
+  } else {
+    stmt = c.env.DB.prepare(`SELECT * FROM discounts ORDER BY created_at DESC`);
+  }
+  const { results } = await stmt.all();
   return ok(c, results.map((r) => rowToDiscount(r as never)));
 });
 
@@ -69,8 +78,8 @@ adminDiscounts.post("/", async (c) => {
   try {
     await c.env.DB.prepare(
       `INSERT INTO discounts (id, code, name, description, type, value, automatic, free_shipping,
-         active, min_subtotal, starts_at, ends_at, usage_limit, usage_count, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+         active, min_subtotal, starts_at, ends_at, usage_limit, usage_count, store_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
     )
       .bind(
         id,
@@ -86,6 +95,7 @@ adminDiscounts.post("/", async (c) => {
         strOrNull(body.starts_at),
         strOrNull(body.ends_at),
         intOrNull(body.usage_limit),
+        strOrNull(body.store_id) || "store_default",
         now,
         now,
       )
@@ -128,6 +138,7 @@ adminDiscounts.patch("/:id", async (c) => {
   if (body.starts_at !== undefined) set("starts_at", strOrNull(body.starts_at));
   if (body.ends_at !== undefined) set("ends_at", strOrNull(body.ends_at));
   if (body.usage_limit !== undefined) set("usage_limit", intOrNull(body.usage_limit));
+  if (body.store_id !== undefined) set("store_id", strOrNull(body.store_id) || "store_default");
 
   if (!sets.length) return fail(c, "No updatable fields provided.");
   set("updated_at", nowIso());

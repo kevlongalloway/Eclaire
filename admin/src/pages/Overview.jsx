@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, formatPrice, formatDate } from "../api";
+import { useStore } from "../store-context.jsx";
 
 export default function Overview() {
+  const { currentStore, currentStoreId } = useStore();
   const [stats, setStats] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
+    setLoading(true);
+    setError("");
     (async () => {
       try {
         const data = await api.getStats();
@@ -22,7 +26,7 @@ export default function Overview() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [currentStoreId]);
 
   if (loading) return <PageLoading title="Overview" />;
   if (error) return <PageError title="Overview" message={error} />;
@@ -41,7 +45,9 @@ export default function Overview() {
     <div className="ad-page">
       <header className="ad-page-head">
         <h1>Overview</h1>
-        <p className="ad-page-sub">Store performance at a glance.</p>
+        <p className="ad-page-sub">
+          {currentStore ? `${currentStore.name} — performance at a glance.` : "Store performance at a glance."}
+        </p>
       </header>
 
       <div className="ad-kpis">
