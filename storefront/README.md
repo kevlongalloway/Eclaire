@@ -1,8 +1,12 @@
 # Éclaire
 
-A luxury jewelry storefront — a React single-page app wired to the
+A luxury jewelry storefront — a multi-page React app (react-router) wired to the
 **E-commaxxing API** (products, discount codes, Stripe checkout, order
 tracking). Built with Vite and deployable as a **static site on Render**.
+
+Pages each have their own URL: `/` (home), `/shop`, `/product/:key`, `/cart`,
+`/story`, and `/order` (Stripe success page). Deep links rely on the
+`/* → /index.html` rewrite already declared in the root `render.yaml`.
 
 With no API URL configured it runs in **demo mode** on a bundled mock catalog
 so the site always renders.
@@ -59,8 +63,8 @@ at **build time**, so redeploy after changing it.
 | Checkout (Stripe hosted) | `POST /checkout/session` | "Checkout" button → redirect |
 | Order status + tracking | `GET /orders?session_id=` | success page (`?session_id=…`) |
 
-The success page is the same SPA route: after Stripe redirects back to
-`…/?session_id={CHECKOUT_SESSION_ID}`, the app polls `GET /orders` and shows
+The success page is the `/order` route: after Stripe redirects back to
+`…/order?session_id={CHECKOUT_SESSION_ID}`, the app polls `GET /orders` and shows
 status, items, totals, shipping address, and a carrier tracking link.
 
 ## Length (inches) + width (mm) variations — backend compatibility
