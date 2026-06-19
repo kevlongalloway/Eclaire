@@ -12,6 +12,12 @@
 
 const BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
 
+/* Public base URL for product images — the R2 bucket (or any CDN) that serves
+   the uploaded files. Stored image references keep the R2 object key after an
+   `/images/` segment, so we serve them directly from this base. Read at BUILD
+   time. When unset we fall back to the API's `/images/<key>` streaming route. */
+const IMAGE_BASE = (import.meta.env.VITE_IMAGE_BASE || "").replace(/\/+$/, "");
+
 /* Which store this storefront deploy represents. The API resolves it to a
    store via X-Store-Slug; leave blank to use the API's default store. */
 const STORE = (import.meta.env.VITE_STORE_SLUG || "").trim();
@@ -121,10 +127,31 @@ export function formatPrice(amount, currency = "usd") {
   }).format((amount || 0) / 100);
 }
 
+/* Resolve a stored image reference to a loadable URL. Stored values may be a
+   full URL (https://…/images/<key>), an API-relative path (/images/<key>), or
+   a bare R2 object key (products/<file>). We extract the R2 object key and, when
+   VITE_IMAGE_BASE is set, serve it straight from the bucket; otherwise we route
+   it through the API's /images/<key> streamer. */
+export function resolveImageUrl(ref) {
+  if (!ref || typeof ref !== "string") return null;
+  const marker = "/images/";
+  const idx = ref.indexOf(marker);
+  let key = idx !== -1 ? ref.slice(idx + marker.length) : ref;
+  // Already an absolute URL that isn't an /images/ reference — use it as-is.
+  if (idx === -1 && /^https?:\/\//i.test(ref)) return ref;
+  key = key.replace(/^\/+/, "");
+  if (!key) return null;
+  if (IMAGE_BASE) return `${IMAGE_BASE}/${key}`;
+  if (BASE) return `${BASE}/images/${key}`;
+  return ref;
+}
+
 export function getPrimaryImage(product) {
-  return product && Array.isArray(product.images) && product.images.length > 0
-    ? product.images[0]
-    : null;
+  const first =
+    product && Array.isArray(product.images) && product.images.length > 0
+      ? product.images[0]
+      : null;
+  return resolveImageUrl(first);
 }
 
 export function isAvailable(product) {
