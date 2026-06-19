@@ -26,6 +26,11 @@ services:
       # Leave blank to use the API's default store. Read at BUILD time.
       - key: VITE_STORE_SLUG
         sync: false
+      # Public base URL for product images (R2 bucket). Image references keep
+      # their object key, so the storefront serves them directly from here.
+      # Read at BUILD time — redeploy after changing.
+      - key: VITE_IMAGE_BASE
+        value: https://pub-4780839150d74b88a0f11c9e84dbdd90.r2.dev
     routes:
       - type: rewrite
         source: /*
