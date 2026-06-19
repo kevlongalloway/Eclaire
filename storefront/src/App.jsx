@@ -14,6 +14,15 @@ import {
    Unstyled: plain semantic HTML only (no CSS, no classes, no inline styles).
    ============================================================================ */
 
+/* Repeating facts for the homepage "light rail" info scroller. */
+const LIGHT_RAIL_FACTS = [
+  "Solid 925 Sterling Silver",
+  "Hand-Finished",
+  "Catches Light Differently in Every Room",
+  "Heirloom Weight",
+  "Designed to Last",
+];
+
 /* Demo fallback catalog (used when no API is configured). */
 const MOCK_PRODUCTS = [
   {
@@ -60,40 +69,37 @@ function ProductItem({ group, onAdd }) {
 
   return (
     <li>
-      <article>
+      <article className="product-card">
+        <div className={`product-media${img ? "" : " product-media-empty"}`}>
+          {img && <img src={img} alt={`${group.name} — sterling silver catching the light`} />}
+        </div>
+        {group.tag && <span className="product-tag">{group.tag}</span>}
         <h3>{group.name}</h3>
-        {img && <img src={img} alt={group.name} />}
-        <p>{formatPrice(price, group.currency)}</p>
         {(group.collection || group.metal) && (
-          <p>{group.collection}{group.collection && group.metal ? " — " : ""}{group.metal}</p>
+          <p className="meta">{group.collection}{group.collection && group.metal ? " · " : ""}{group.metal}</p>
         )}
-        {group.desc && <p>{group.desc}</p>}
-        <form onSubmit={(e) => { e.preventDefault(); if (!unavailable) onAdd(group, length, width); }}>
+        {group.desc && <p className="desc">{group.desc}</p>}
+        <p className="price">{formatPrice(price, group.currency)}</p>
+        <form className="product-form" onSubmit={(e) => { e.preventDefault(); if (!unavailable) onAdd(group, length, width); }}>
           {group.lengths && group.lengths.length > 0 && (
-            <p>
-              <label>
-                Length{" "}
-                <select value={length} onChange={(e) => setLength(e.target.value)}>
-                  {group.lengths.map((l) => <option key={l} value={l}>{l}</option>)}
-                </select>
-              </label>
-            </p>
+            <label className="field">
+              Length
+              <select value={length} onChange={(e) => setLength(e.target.value)}>
+                {group.lengths.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </label>
           )}
           {group.widths && group.widths.length > 0 && (
-            <p>
-              <label>
-                Width{" "}
-                <select value={width} onChange={(e) => setWidth(e.target.value)}>
-                  {group.widths.map((w) => <option key={w} value={w}>{w}</option>)}
-                </select>
-              </label>
-            </p>
+            <label className="field">
+              Width
+              <select value={width} onChange={(e) => setWidth(e.target.value)}>
+                {group.widths.map((w) => <option key={w} value={w}>{w}</option>)}
+              </select>
+            </label>
           )}
-          <p>
-            <button type="submit" disabled={unavailable}>
-              {unavailable ? "Unavailable" : "Add to bag"}
-            </button>
-          </p>
+          <button className="btn btn-primary" type="submit" disabled={unavailable}>
+            {unavailable ? "Unavailable" : "Add to bag"}
+          </button>
         </form>
       </article>
     </li>
@@ -120,11 +126,12 @@ function OrderStatus({ sessionId, onBack }) {
   }, [sessionId]);
 
   return (
-    <main>
-      <h1>Éclaire Atelier</h1>
+    <main className="order-status">
+      <span className="label">Éclaire Atelier</span>
+      <h1>Thank you</h1>
       <h2>Order status</h2>
-      {loading && <p>Confirming your order…</p>}
-      {error && !loading && <p>{error}</p>}
+      {loading && <p className="notice">Confirming your order…</p>}
+      {error && !loading && <p className="notice notice-error">{error}</p>}
       {order && (
         <article>
           <p>Status: {order.status}</p>
@@ -157,7 +164,7 @@ function OrderStatus({ sessionId, onBack }) {
           )}
         </article>
       )}
-      <p><button onClick={onBack}>Continue shopping</button></p>
+      <p><button className="btn btn-outline" onClick={onBack}>Continue shopping</button></p>
     </main>
   );
 }
@@ -272,54 +279,101 @@ export default function App() {
 
   return (
     <>
-      <header>
-        <h1>Éclaire Atelier</h1>
-        <p>Jewelry that catches the light. Solid 925 sterling silver, hand-finished in the atelier, weighted to last.</p>
-        <nav>
-          <a href="#shop">Shop</a>{" | "}
-          <a href="#story">Atelier</a>{" | "}
+      <header className="site-header">
+        <h1>Éclaire</h1>
+        <p className="tagline">Jewelry that catches the light.</p>
+        <nav className="site-nav">
+          <a href="#shop">Shop</a>
+          <a href="#story">Atelier</a>
           <a href="#bag">Bag ({count})</a>
         </nav>
       </header>
 
-      <hr />
+      <section className="hero">
+        <div className="hero-inner">
+          <span className="label">Solid 925 · Hand-Finished</span>
+          <h1>Jewelry that catches the light.</h1>
+          <p className="hero-sub">
+            Solid 925 sterling silver, hand-finished in the atelier and weighted to last.
+            Brilliance, beautifully made.
+          </p>
+          <a className="btn btn-primary" style={{ width: "auto" }} href="#shop">Shop the Collection</a>
+          <a className="scroll-prompt" href="#shop" aria-label="Scroll to explore the collection">
+            scroll to explore
+            <span className="arrow" aria-hidden="true" />
+          </a>
+        </div>
+      </section>
 
-      <main>
+      <div className="light-rail" aria-hidden="true">
+        <div className="light-rail-track">
+          {[...LIGHT_RAIL_FACTS, ...LIGHT_RAIL_FACTS].map((fact, i) => (
+            <span className="light-rail-item" key={i}>{fact}</span>
+          ))}
+        </div>
+      </div>
+
+      <main className="container">
         {demo && (
-          <p>Demo mode — showing sample products.{loadError ? ` (API error: ${loadError})` : ""} Set VITE_API_BASE to connect the live store.</p>
+          <p className="demo-banner">
+            Demo mode — showing sample products.{loadError ? ` (API error: ${loadError})` : ""} Set VITE_API_BASE to connect the live store.
+          </p>
         )}
 
-        <section id="shop">
-          <h2>The Collection</h2>
+        <section className="value-props">
+          <span className="label">Why Éclaire</span>
+          <div className="value-grid">
+            <article className="value-item">
+              <h3>Made With Intention</h3>
+              <p>Solid 925 sterling silver — never plated, never hollow. Weighted to feel like an heirloom from the first wear.</p>
+            </article>
+            <article className="value-item">
+              <h3>Chosen for Brilliance</h3>
+              <p>Each piece is hand-finished so it catches the light differently in every room you enter.</p>
+            </article>
+            <article className="value-item">
+              <h3>Beyond the Season</h3>
+              <p>Designed to be worn and loved for years — never tied to a passing trend.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="shop" className="section">
+          <div className="section-head">
+            <span className="label label--dot">The Collection</span>
+            <h2>Pieces that hold the light</h2>
+          </div>
           {loading ? (
-            <p>Loading the collection…</p>
+            <p className="empty-state">Loading the collection…</p>
           ) : groups.length === 0 ? (
-            <p>No pieces yet.</p>
+            <p className="empty-state">No pieces yet.</p>
           ) : (
-            <ul>
+            <ul className="product-grid">
               {groups.map((g) => <ProductItem key={g.key} group={g} onAdd={addToCart} />)}
             </ul>
           )}
         </section>
 
-        <hr />
-
-        <section id="story">
-          <h2>Our Story</h2>
+        <section id="story" className="section story">
+          <div className="section-head">
+            <span className="label label--dot">Our Story</span>
+            <h2>Where light becomes something you can carry</h2>
+          </div>
           <p>We begin with solid 925 sterling silver of exceptional quality and weight, crafted so it sparkles with genuine brilliance and feels like an heirloom from the very first wear.</p>
           <p>Éclaire Atelier is not defined by one metal. Over time we’ll introduce collections in gold and beyond — but we’ll always be defined by the way our jewelry makes you feel when you wear it.</p>
-          <p>— The Éclaire Atelier</p>
+          <p className="signoff">— The Éclaire Atelier</p>
         </section>
 
-        <hr />
-
-        <section id="bag">
-          <h2>Your Bag</h2>
+        <section id="bag" className="section">
+          <div className="section-head">
+            <span className="label label--dot">Your Bag</span>
+            <h2>Your Bag</h2>
+          </div>
           {cart.length === 0 ? (
-            <p>Your bag is empty.</p>
+            <p className="empty-state">Your bag is empty.</p>
           ) : (
             <>
-              <table>
+              <table className="bag-table">
                 <thead>
                   <tr>
                     <th>Item</th>
@@ -335,53 +389,53 @@ export default function App() {
                       <td>{it.name}</td>
                       <td>{it.length} / {it.width}</td>
                       <td>
-                        <button onClick={() => changeQty(it.key, -1)} aria-label="Decrease quantity">−</button>
-                        {" "}{it.qty}{" "}
-                        <button onClick={() => changeQty(it.key, 1)} aria-label="Increase quantity">+</button>
+                        <span className="bag-qty">
+                          <button className="btn-quiet" onClick={() => changeQty(it.key, -1)} aria-label="Decrease quantity">−</button>
+                          {it.qty}
+                          <button className="btn-quiet" onClick={() => changeQty(it.key, 1)} aria-label="Increase quantity">+</button>
+                        </span>
                       </td>
                       <td>{formatPrice(it.price * it.qty, it.currency)}</td>
-                      <td><button onClick={() => removeItem(it.key)}>Remove</button></td>
+                      <td><button className="btn-link" onClick={() => removeItem(it.key)}>Remove</button></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
 
               {!demo && (
-                <form onSubmit={(e) => { e.preventDefault(); applyDiscount(); }}>
-                  <label>
-                    Discount code{" "}
+                <form className="discount-form" onSubmit={(e) => { e.preventDefault(); applyDiscount(); }}>
+                  <label className="field">
+                    Discount code
                     <input value={code} onChange={(e) => setCode(e.target.value)} />
                   </label>
-                  {" "}
-                  <button type="submit">Apply</button>
-                  {quoteError && <p>{quoteError}</p>}
-                  {quote && quote.valid && quote.discount && <p>Applied: {quote.discount.code}</p>}
+                  <button className="btn btn-outline" type="submit">Apply</button>
+                  {quoteError && <p className="notice notice-error">{quoteError}</p>}
+                  {quote && quote.valid && quote.discount && <p className="notice notice-success">Applied: {quote.discount.code}</p>}
                 </form>
               )}
 
-              <p>Subtotal: {formatPrice(quote ? quote.original_amount : subtotal, currency)}</p>
-              {quote && quote.discount_amount > 0 && <p>Discount: −{formatPrice(quote.discount_amount, currency)}</p>}
-              <p>Shipping: {quote && quote.is_free_shipping ? "Free" : "Calculated at checkout"}</p>
-              <p>Total: {formatPrice(total, currency)}</p>
+              <div className="bag-summary">
+                <p><span>Subtotal</span><span>{formatPrice(quote ? quote.original_amount : subtotal, currency)}</span></p>
+                {quote && quote.discount_amount > 0 && <p><span>Discount</span><span>−{formatPrice(quote.discount_amount, currency)}</span></p>}
+                <p><span>Shipping</span><span>{quote && quote.is_free_shipping ? "Free" : "Calculated at checkout"}</span></p>
+                <p className="summary-total"><span>Total</span><span>{formatPrice(total, currency)}</span></p>
+              </div>
 
-              {checkoutError && <p>{checkoutError}</p>}
+              {checkoutError && <p className="notice notice-error">{checkoutError}</p>}
               {demo ? (
-                <p>Checkout is unavailable in demo mode. Set VITE_API_BASE to enable live checkout.</p>
+                <p className="notice">Checkout is unavailable in demo mode. Set VITE_API_BASE to enable live checkout.</p>
               ) : (
-                <p>
-                  <button onClick={checkout} disabled={checkoutBusy}>
-                    {checkoutBusy ? "Redirecting…" : "Checkout"}
-                  </button>
-                </p>
+                <button className="btn btn-primary" onClick={checkout} disabled={checkoutBusy}>
+                  {checkoutBusy ? "Redirecting…" : "Checkout"}
+                </button>
               )}
             </>
           )}
         </section>
       </main>
 
-      <hr />
-
-      <footer>
+      <footer className="site-footer">
+        <p>Éclaire Atelier — Brilliance, Beautifully Made.</p>
         <p>© {new Date().getFullYear()} Éclaire Atelier</p>
       </footer>
     </>
