@@ -213,69 +213,76 @@ function Tile({ id, swatch, image, name, hover = false }) {
 function Header({ count, onCart, onSearch, onNav, scrolled }) {
   return (
     <header className={`ec-header ${scrolled ? "is-scrolled" : ""}`}>
-      <button className="ec-nav-link ec-hide-sm" onClick={() => onNav("shop")}>Shop</button>
-      <button className="ec-nav-link ec-hide-sm" onClick={() => onNav("story")}>Our Story</button>
-      <button className="ec-logo" onClick={() => onNav("top")} aria-label="Éclaire home">
-        <span className="ec-logo-mark"><Icon.Spark width="14" height="14" /></span>
-        Éclaire
-      </button>
-      <button className="ec-icon-btn ec-hide-sm" onClick={onSearch} aria-label="Search">
-        <Icon.Search width="20" height="20" />
-      </button>
-      <button className="ec-icon-btn ec-bag" onClick={onCart} aria-label="Cart">
-        <Icon.Bag width="20" height="20" />
-        {count > 0 && <span className="ec-bag-count">{count}</span>}
-      </button>
+      <nav className="ec-header-nav">
+        <button className="ec-nav-link" onClick={() => onNav("shop")}>Shop</button>
+        <button className="ec-nav-link ec-hide-sm" onClick={() => onNav("story")}>Atelier</button>
+      </nav>
+      <button className="ec-logo" onClick={() => onNav("top")} aria-label="Éclaire home">Éclaire</button>
+      <div className="ec-header-actions">
+        <button className="ec-nav-link ec-hide-sm" onClick={onSearch}>Search</button>
+        <button className="ec-nav-link ec-bag" onClick={onCart}>
+          Bag{count > 0 && <sup>{count}</sup>}
+        </button>
+      </div>
     </header>
   );
 }
 
 /* --------------------------------- HERO ----------------------------------- */
-function Hero({ onShop }) {
+function Hero({ onShop, featured }) {
   return (
     <section className="ec-hero">
-      <div className="ec-hero-rays" aria-hidden />
-      <div className="ec-hero-grain" aria-hidden />
-      <div className="ec-hero-inner">
-        <p className="ec-eyebrow ec-reveal" style={{ animationDelay: ".1s" }}>
-          <Icon.Spark width="11" height="11" /> Solid 925 Sterling Silver
-        </p>
-        <h1 className="ec-hero-title">
-          <span className="ec-reveal" style={{ animationDelay: ".22s" }}>Jewelry that</span>
-          <span className="ec-reveal ec-italic" style={{ animationDelay: ".36s" }}>catches the light.</span>
-        </h1>
-        <p className="ec-hero-sub ec-reveal" style={{ animationDelay: ".52s" }}>
-          Crafted with intention, weighted to last. Pieces that sparkle with genuine
-          brilliance and feel like an heirloom from the very first wear.
-        </p>
-        <div className="ec-reveal" style={{ animationDelay: ".66s" }}>
-          <button className="ec-link-cta ec-link-cta-lg" onClick={onShop}>
-            <span className="ec-link-cta-row">Shop the collection <Icon.Arrow width="18" height="18" /></span>
-            <span className="ec-link-cta-line" />
-          </button>
+      <div className="ec-hero-bg" aria-hidden />
+      <span className="ec-hero-edge ec-hero-edge-l">Atelier — MMXXVI</span>
+      <span className="ec-hero-edge ec-hero-edge-r">925 · Solid Sterling</span>
+      <div className="ec-hero-grid">
+        <div className="ec-hero-copy">
+          <h1 className="ec-hero-title">
+            <span className="ec-reveal" style={{ animationDelay: ".05s" }}>Jewelry</span>
+            <span className="ec-reveal" style={{ animationDelay: ".18s" }}>that <em>catches</em></span>
+            <span className="ec-reveal" style={{ animationDelay: ".31s" }}>the light</span>
+          </h1>
+        </div>
+        <div className="ec-hero-feature ec-reveal" style={{ animationDelay: ".42s" }}>
+          <div className="ec-hero-feature-frame">
+            <Tile
+              id={featured ? featured.key : "eclaire"}
+              swatch={featured ? featured.swatch : "#C8CCD2"}
+              image={featured ? getPrimaryImage(featured) : null}
+              name={featured ? featured.name : "Éclaire"}
+              hover
+            />
+          </div>
+          {featured && (
+            <button className="ec-hero-feature-cap" onClick={onShop}>
+              <span className="ec-hero-feature-name">{featured.name}</span>
+              <span className="ec-hero-feature-price">{formatPrice(featured.price, featured.currency)}</span>
+            </button>
+          )}
         </div>
       </div>
-      <div className="ec-hero-scroll ec-reveal" style={{ animationDelay: "1s" }}>
-        <span>Scroll</span><i />
+      <div className="ec-hero-foot ec-reveal" style={{ animationDelay: ".5s" }}>
+        <p className="ec-hero-note">Solid 925 sterling silver — hand-finished in the atelier, weighted to last.</p>
+        <button className="ec-link-cta ec-link-cta-lg" onClick={onShop}>
+          <span className="ec-link-cta-row">Discover the collection <Icon.Arrow width="18" height="18" /></span>
+          <span className="ec-link-cta-line" />
+        </button>
       </div>
     </section>
   );
 }
 
-/* ------------------------------ MARQUEE ----------------------------------- */
-function Marquee() {
-  const items = ["Brilliance, Beautifully Made", "Light. Crafted.", "Timeless Sparkle for Everyday", "Pieces That Feel Like Yours"];
-  const row = [...items, ...items];
+/* ------------------------------ MANIFESTO --------------------------------- */
+function Manifesto() {
   return (
-    <div className="ec-marquee" aria-hidden>
-      <div className="ec-marquee-track">
-        {row.map((t, i) => (
-          <span key={i} className="ec-marquee-item">
-            {t} <Icon.Spark width="13" height="13" className="ec-marquee-spark" />
-          </span>
-        ))}
-      </div>
-    </div>
+    <section className="ec-manifesto" id="manifesto">
+      <span className="ec-kicker">The Promise</span>
+      <p className="ec-manifesto-text">
+        Solid <em>925</em> sterling silver. Not plated, not hollow — each piece is
+        hand-finished to hold the light and feel like an <em>heirloom</em> from the very
+        first wear.
+      </p>
+    </section>
   );
 }
 
@@ -285,11 +292,11 @@ function ProductCard({ group, onOpen, onAdd, index }) {
   return (
     <article
       className="ec-card ec-reveal-up"
-      style={{ animationDelay: `${index * 0.07}s` }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
       <button className="ec-card-media" onClick={() => onOpen(group)} aria-label={`View ${group.name}`}>
+        <span className="ec-card-index">{String(index + 1).padStart(2, "0")}</span>
         {group.tag && <span className={`ec-tag ec-tag-${String(group.tag).toLowerCase()}`}>{group.tag}</span>}
         <Tile id={group.key} swatch={group.swatch} image={getPrimaryImage(group)} name={group.name} hover={hover} />
       </button>
@@ -298,9 +305,10 @@ function ProductCard({ group, onOpen, onAdd, index }) {
           <h3 className="ec-card-name">{group.name}</h3>
           <span className="ec-card-price">{formatPrice(group.price, group.currency)}</span>
         </div>
-        <p className="ec-card-meta">{group.metal}{group.metal && group.defaultLength ? " · " : ""}{group.defaultLength}</p>
+        <p className="ec-card-meta">{group.metal}{group.metal && group.defaultLength ? " — " : ""}{group.defaultLength}</p>
         <button className="ec-card-add" onClick={() => onAdd(group, group.defaultLength, group.defaultWidth)}>
-          <span>Add to bag</span> <Icon.Arrow width="14" height="14" />
+          <span className="ec-link-cta-row">Add to bag <Icon.Arrow width="14" height="14" /></span>
+          <span className="ec-link-cta-line" />
         </button>
       </div>
     </article>
@@ -312,9 +320,9 @@ function Shop({ groups, onOpen, onAdd, collections, filter, setFilter, sort, set
   return (
     <section className="ec-shop" id="shop">
       <div className="ec-shop-head">
-        <div>
-          <p className="ec-eyebrow"><Icon.Spark width="11" height="11" /> The Collection</p>
-          <h2 className="ec-section-title">Signature Silver</h2>
+        <div className="ec-shop-head-l">
+          <span className="ec-kicker">The Collection — {String(groups.length).padStart(2, "0")}</span>
+          <h2 className="ec-section-title">Signature<br /><em>Silver</em></h2>
         </div>
         <div className="ec-shop-controls">
           <div className="ec-chips">
@@ -325,8 +333,8 @@ function Shop({ groups, onOpen, onAdd, collections, filter, setFilter, sort, set
           <div className="ec-select-wrap">
             <select className="ec-select" value={sort} onChange={(e) => setSort(e.target.value)}>
               <option value="featured">Featured</option>
-              <option value="low">Price: Low to High</option>
-              <option value="high">Price: High to Low</option>
+              <option value="low">Price · Low to High</option>
+              <option value="high">Price · High to Low</option>
             </select>
           </div>
         </div>
@@ -343,23 +351,20 @@ function Shop({ groups, onOpen, onAdd, collections, filter, setFilter, sort, set
 /* ------------------------------ VALUES BAND ------------------------------- */
 function Values() {
   const items = [
-    { icon: Icon.Hand, t: "Made With Intention", d: "Every piece is hand-finished and considered, never mass-produced or rushed." },
-    { icon: Icon.Gem, t: "Chosen for Brilliance", d: "Materials selected for natural light, weight, and a durability built to last." },
-    { icon: Icon.Leaf, t: "Beyond the Season", d: "Designed to be worn and loved for years — never tied to a passing trend." },
+    { t: "Made With Intention", d: "Every piece is hand-finished and considered — never mass-produced, never rushed." },
+    { t: "Chosen for Brilliance", d: "Materials selected for natural light, weight, and a durability built to last." },
+    { t: "Beyond the Season", d: "Designed to be worn and loved for years — never tied to a passing trend." },
   ];
   return (
     <section className="ec-values">
       <div className="ec-values-grid">
-        {items.map((it, i) => {
-          const I = it.icon;
-          return (
-            <div className="ec-value ec-reveal-up" style={{ animationDelay: `${i * 0.1}s` }} key={i}>
-              <span className="ec-value-icon"><I width="26" height="26" /></span>
-              <h3>{it.t}</h3>
-              <p>{it.d}</p>
-            </div>
-          );
-        })}
+        {items.map((it, i) => (
+          <div className="ec-value ec-reveal-up" key={i}>
+            <span className="ec-value-num">{String(i + 1).padStart(2, "0")}</span>
+            <h3>{it.t}</h3>
+            <p>{it.d}</p>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -370,27 +375,24 @@ function Story() {
   return (
     <section className="ec-story" id="story">
       <div className="ec-story-inner">
-      <div className="ec-story-visual" aria-hidden>
-        <div className="ec-story-orb" />
-        <Icon.Spark className="ec-story-spark s1" width="60" height="60" />
-        <Icon.Spark className="ec-story-spark s2" width="34" height="34" />
-        <Icon.Spark className="ec-story-spark s3" width="22" height="22" />
-      </div>
-      <div className="ec-story-text">
-        <p className="ec-eyebrow"><Icon.Spark width="11" height="11" /> Our Story</p>
-        <h2 className="ec-section-title">Born to celebrate light<br/>in its most beautiful forms.</h2>
-        <p>
-          We begin with solid 925 sterling silver of exceptional quality and weight,
-          crafted so it sparkles with genuine brilliance and feels like an heirloom from
-          the very first wear.
-        </p>
-        <p>
-          Éclaire is not defined by one metal. Over time we’ll introduce collections in
-          gold and beyond — but we’ll always be defined by the way our jewelry makes you
-          feel when you wear it.
-        </p>
-        <p className="ec-signature">— The Éclaire Atelier</p>
-      </div>
+        <div className="ec-story-visual" aria-hidden>
+          <div className="ec-story-orb" />
+        </div>
+        <div className="ec-story-text">
+          <span className="ec-kicker">The Atelier</span>
+          <h2 className="ec-section-title">Born to celebrate light<br/>in its <em>most beautiful</em> forms.</h2>
+          <p>
+            We begin with solid 925 sterling silver of exceptional quality and weight,
+            crafted so it sparkles with genuine brilliance and feels like an heirloom from
+            the very first wear.
+          </p>
+          <p>
+            Éclaire is not defined by one metal. Over time we’ll introduce collections in
+            gold and beyond — but we’ll always be defined by the way our jewelry makes you
+            feel when you wear it.
+          </p>
+          <p className="ec-signature">— The Éclaire Atelier</p>
+        </div>
       </div>
     </section>
   );
@@ -610,16 +612,17 @@ function Newsletter() {
   return (
     <section className="ec-news">
       <div className="ec-news-inner">
-        <Icon.Spark width="28" height="28" className="ec-news-spark" />
-        <h2>Be first to the light.</h2>
-        <p>New collections, early access, and the occasional note from the atelier.</p>
+        <span className="ec-kicker ec-kicker-light">Keep in touch</span>
+        <h2>Be first<br/>to the <em>light.</em></h2>
         {done ? (
           <p className="ec-news-done">Welcome to Éclaire — keep an eye on your inbox.</p>
         ) : (
           <div className="ec-news-form">
             {/* BACKEND: POST email to your list provider (no API endpoint documented) */}
-            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" type="email" />
-            <button className="ec-btn ec-btn-dark" onClick={() => email.includes("@") && setDone(true)}>Subscribe</button>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Your email address" type="email" />
+            <button className="ec-news-submit" onClick={() => email.includes("@") && setDone(true)} aria-label="Subscribe">
+              <Icon.Arrow width="20" height="20" />
+            </button>
           </div>
         )}
       </div>
@@ -631,19 +634,17 @@ function Newsletter() {
 function Footer({ onNav }) {
   return (
     <footer className="ec-footer">
+      <button className="ec-footer-word" onClick={() => onNav("top")} aria-label="Éclaire home">Éclaire</button>
       <div className="ec-footer-top">
-        <div className="ec-footer-brand">
-          <span className="ec-logo ec-logo-foot"><span className="ec-logo-mark"><Icon.Spark width="13" height="13" /></span>Éclaire</span>
-          <p>Brilliance, beautifully made. Solid 925 sterling silver, crafted to be worn and loved for years.</p>
-        </div>
+        <p className="ec-footer-blurb">Brilliance, beautifully made.<br/>Solid 925 sterling silver, crafted to be worn for years.</p>
         <div className="ec-footer-cols">
           <div><h4>Shop</h4><button onClick={() => onNav("shop")}>Signature Silver</button><button onClick={() => onNav("shop")}>Bestsellers</button><button onClick={() => onNav("shop")}>New Arrivals</button></div>
-          <div><h4>About</h4><button onClick={() => onNav("story")}>Our Story</button><button>Materials</button><button>Craftsmanship</button></div>
+          <div><h4>Atelier</h4><button onClick={() => onNav("story")}>Our Story</button><button>Materials</button><button>Craftsmanship</button></div>
           <div><h4>Care</h4><button>Shipping</button><button>Returns</button><button>Jewelry Care</button></div>
         </div>
       </div>
       <div className="ec-footer-bottom">
-        <span>© {new Date().getFullYear()} Éclaire. All rights reserved.</span>
+        <span>© {new Date().getFullYear()} Éclaire</span>
         <span className="ec-footer-tag">Light. Crafted.</span>
       </div>
     </footer>
@@ -965,8 +966,8 @@ export default function App() {
       <Header count={count} scrolled={scrolled}
         onCart={() => setCartOpen(true)} onSearch={() => setSearchOpen(true)} onNav={nav} />
       <main>
-        <Hero onShop={() => nav("shop")} />
-        <Marquee />
+        <Hero onShop={() => nav("shop")} featured={groups[0] || null} />
+        <Manifesto />
         {loading ? (
           <section className="ec-shop" id="shop"><p className="ec-loading">Loading the collection…</p></section>
         ) : (
@@ -1312,6 +1313,146 @@ img{display:block;max-width:100%}
   .ec-footer-cols{grid-template-columns:1fr 1fr}
   .ec-footer-bottom{flex-direction:column;gap:.4rem}
   .ec-news-form{flex-direction:column}
+}
+
+/* ======================================================================== */
+/* ===================  EDITORIAL REDESIGN (art-directed)  ================ */
+/* ======================================================================== */
+
+/* shared editorial kicker label */
+.ec-kicker{display:inline-block;font-family:var(--sans);font-size:.66rem;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-soft)}
+.ec-kicker-light{color:rgba(250,247,242,.55)}
+
+/* ---- HEADER : nav · wordmark · actions ---- */
+.ec-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1rem;padding:1.7rem clamp(1.2rem,5vw,4.5rem);color:var(--text-inverse)}
+.ec-header.is-scrolled{background:rgba(250,247,242,.92);backdrop-filter:blur(16px);padding-top:1.1rem;padding-bottom:1.1rem;box-shadow:0 1px 0 var(--line);color:var(--ink)}
+.ec-header-nav{display:flex;gap:1.8rem;justify-self:start}
+.ec-header-actions{display:flex;gap:1.8rem;justify-self:end}
+.ec-nav-link{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:inherit;opacity:.82;font-weight:500;transition:opacity .2s}
+.ec-nav-link:hover{opacity:1}
+.ec-bag sup{font-size:.58rem;margin-left:.15em;font-feature-settings:"sups"}
+.ec-logo{justify-self:center;font-family:var(--serif);font-size:1.7rem;font-weight:500;letter-spacing:.05em;color:inherit}
+
+/* ---- HERO : asymmetric editorial composition ---- */
+.ec-hero{position:relative;min-height:100vh;display:grid;grid-template-rows:1fr auto;padding:7.5rem clamp(1.2rem,5vw,4.5rem) 2.6rem;overflow:hidden;background:#0c0c0c;color:var(--text-inverse)}
+.ec-hero-bg{position:absolute;inset:0;z-index:0;background:
+  radial-gradient(ellipse 55% 45% at 72% 30%, rgba(232,232,232,.14), transparent 60%),
+  radial-gradient(ellipse 70% 55% at 25% 88%, rgba(201,169,98,.10), transparent 62%),
+  #0c0c0c}
+.ec-hero-edge{position:absolute;z-index:2;top:50%;font-size:.62rem;letter-spacing:.36em;text-transform:uppercase;color:rgba(250,247,242,.42);writing-mode:vertical-rl}
+.ec-hero-edge-l{left:clamp(.5rem,1.8vw,1.4rem);transform:translateY(-50%) rotate(180deg)}
+.ec-hero-edge-r{right:clamp(.5rem,1.8vw,1.4rem);transform:translateY(-50%)}
+.ec-hero-grid{position:relative;z-index:2;align-self:center;display:grid;grid-template-columns:1.18fr .82fr;align-items:center;gap:clamp(2rem,5vw,5rem);width:100%;max-width:1440px;margin:0 auto}
+.ec-hero-title{font-family:var(--serif);font-weight:500;font-size:clamp(3.1rem,11vw,8.6rem);line-height:.9;letter-spacing:-.025em;margin:0}
+.ec-hero-title span{display:block}
+.ec-hero-title em{font-style:italic;font-weight:400}
+.ec-hero-feature{position:relative}
+.ec-hero-feature-frame{aspect-ratio:4/5;border-radius:8px;overflow:hidden;background:linear-gradient(165deg,#1d1d1d,#0b0b0b);border:1px solid rgba(250,247,242,.1)}
+.ec-hero-feature-frame .ec-visual{height:100%}
+.ec-hero-feature-cap{margin-top:1rem;display:flex;justify-content:space-between;align-items:baseline;gap:1rem;width:100%;color:rgba(250,247,242,.72)}
+.ec-hero-feature-name{font-family:var(--serif);font-style:italic;font-size:1.05rem}
+.ec-hero-feature-price{font-size:.85rem;letter-spacing:.04em}
+.ec-hero-foot{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:flex-end;gap:2rem;width:100%;max-width:1440px;margin:0 auto;padding-top:1.8rem;border-top:1px solid rgba(250,247,242,.16)}
+.ec-hero-note{max-width:34ch;font-size:.92rem;line-height:1.7;color:rgba(250,247,242,.62)}
+
+/* ---- MANIFESTO : large statement (replaces marquee) ---- */
+.ec-manifesto{max-width:1440px;margin:0 auto;padding:clamp(5rem,11vw,9rem) clamp(1.2rem,5vw,4.5rem);display:grid;grid-template-columns:auto 1fr;gap:clamp(1.4rem,5vw,5rem)}
+.ec-manifesto .ec-kicker{padding-top:1rem;white-space:nowrap}
+.ec-manifesto-text{font-family:var(--serif);font-weight:400;font-size:clamp(1.7rem,3.8vw,3.1rem);line-height:1.3;letter-spacing:-.012em;color:var(--ink);max-width:20ch}
+.ec-manifesto-text em{font-style:italic}
+
+/* ---- SHOP : editorial header + staggered grid ---- */
+.ec-shop{max-width:1440px;margin:0 auto;padding:clamp(2.5rem,5vw,4rem) clamp(1.2rem,5vw,4.5rem) clamp(5rem,9vw,8rem)}
+.ec-shop-head{display:flex;justify-content:space-between;align-items:flex-end;gap:2rem;flex-wrap:wrap;margin-bottom:clamp(2.5rem,5vw,4.5rem);padding-top:2.2rem;border-top:1px solid var(--line)}
+.ec-section-title{font-family:var(--serif);font-weight:500;font-size:clamp(2.6rem,6vw,5rem);line-height:.96;letter-spacing:-.022em;margin-top:.7rem}
+.ec-section-title em{font-style:italic;font-weight:400}
+.ec-shop-controls{display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap;padding-bottom:.4rem}
+.ec-chips{display:flex;gap:.3rem;flex-wrap:wrap}
+.ec-chip{position:relative;padding:.45rem .85rem;border:none;border-radius:0;background:none;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);transition:color .2s}
+.ec-chip:hover{color:var(--ink)}
+.ec-chip.is-on{color:var(--ink)}
+.ec-chip.is-on::after{content:"";position:absolute;left:.85rem;right:.85rem;bottom:0;height:1px;background:var(--ink)}
+.ec-select{appearance:none;border:none;border-bottom:1px solid var(--line-strong);border-radius:0;background:none;padding:.45rem 1.9rem .45rem .1rem;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);cursor:pointer}
+.ec-select-wrap::after{right:.4rem}
+.ec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(1.5rem,3vw,3rem) clamp(1.4rem,2.4vw,2.4rem)}
+.ec-grid .ec-card:nth-child(3n-1){transform:translateY(clamp(1.5rem,4vw,4rem))}
+
+/* ---- CARD : numbered, image-forward ---- */
+.ec-card{display:flex;flex-direction:column}
+.ec-card-media{position:relative;border-radius:6px;overflow:hidden;aspect-ratio:3/4;background:linear-gradient(160deg,#fff,var(--cream-2));display:block;width:100%;box-shadow:0 0 0 1px rgba(20,20,20,.04);transition:box-shadow .45s}
+.ec-card:hover .ec-card-media{box-shadow:0 28px 64px -30px rgba(20,20,20,.5)}
+.ec-card-media .ec-visual-img,.ec-card-media .ec-visual-svg{transition:transform .8s cubic-bezier(.2,.7,.2,1)}
+.ec-card:hover .ec-card-media .ec-visual-img,.ec-card:hover .ec-card-media .ec-visual-svg{transform:scale(1.06)}
+.ec-card-index{position:absolute;top:14px;left:16px;z-index:3;font-family:var(--sans);font-size:.72rem;letter-spacing:.08em;color:var(--ink-soft);font-variant-numeric:tabular-nums;mix-blend-mode:multiply}
+.ec-card-body{padding:1.25rem .1rem 0}
+.ec-card-row{display:flex;justify-content:space-between;align-items:baseline;gap:1rem}
+.ec-card-name{font-family:var(--serif);font-weight:500;font-size:1.4rem;line-height:1.1;letter-spacing:-.01em}
+.ec-card-price{font-family:var(--sans);font-size:.95rem;font-weight:500;color:var(--ink);white-space:nowrap}
+.ec-card-meta{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-top:.55rem}
+.ec-card-add{margin-top:1.1rem;display:inline-flex;flex-direction:column;align-items:flex-start;gap:.5rem;padding:0;border:none;background:none;color:var(--ink)}
+.ec-card-add .ec-link-cta-row{font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;font-weight:500;gap:.7rem}
+.ec-card-add .ec-link-cta-line{width:86px}
+.ec-card-add:hover .ec-link-cta-line{width:118px;opacity:.95}
+.ec-card-add svg{transition:transform .3s}
+.ec-card-add:hover svg{transform:translateX(5px)}
+
+/* ---- VALUES : numbered editorial ---- */
+.ec-values{max-width:1440px;margin:0 auto;padding:0 clamp(1.2rem,5vw,4.5rem) clamp(4rem,8vw,7rem)}
+.ec-values-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(1.8rem,3vw,3.5rem);border-top:1px solid var(--line);padding-top:clamp(2.5rem,5vw,4rem)}
+.ec-value{text-align:left;padding:0}
+.ec-value-num{display:block;font-family:var(--serif);font-style:italic;font-size:1.7rem;color:var(--silver-dark);margin-bottom:1rem}
+.ec-value h3{font-family:var(--serif);font-weight:500;font-size:1.5rem;margin-bottom:.6rem;letter-spacing:-.01em}
+.ec-value p{font-size:.95rem;line-height:1.72;color:var(--ink-soft);max-width:34ch;margin:0}
+
+/* ---- STORY : full-bleed dark, oversized ---- */
+.ec-story{background:var(--bg-dark);color:var(--text-inverse);padding:clamp(5rem,10vw,9rem) clamp(1.2rem,5vw,4.5rem)}
+.ec-story-inner{display:grid;grid-template-columns:.82fr 1.18fr;align-items:center;gap:clamp(2rem,6vw,6rem);max-width:1440px;margin:0 auto}
+.ec-story .ec-kicker{color:rgba(250,247,242,.55)}
+.ec-story .ec-section-title{margin:.9rem 0 1.6rem}
+.ec-story-visual{aspect-ratio:1;border-radius:8px;background:radial-gradient(circle at 40% 35%,#222,#0c0c0c 72%);overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid rgba(250,247,242,.08)}
+.ec-story-text p{color:rgba(250,247,242,.68)}
+
+/* ---- NEWSLETTER : big serif + underline field ---- */
+.ec-news{background:var(--bg-dark);color:var(--text-inverse);padding:clamp(5rem,10vw,9rem) clamp(1.2rem,5vw,4.5rem);text-align:left}
+.ec-news-inner{position:relative;max-width:1440px;margin:0 auto;text-align:left}
+.ec-news h2{font-family:var(--serif);font-weight:500;font-size:clamp(2.6rem,7vw,5.5rem);line-height:.96;letter-spacing:-.022em;margin:.9rem 0 2.4rem;color:var(--text-inverse)}
+.ec-news h2 em{font-style:italic;font-weight:400}
+.ec-news-form{display:flex;align-items:center;gap:1rem;max-width:560px;border-bottom:1px solid rgba(250,247,242,.32);padding-bottom:1rem}
+.ec-news-form input{flex:1;border:none;background:none;color:var(--text-inverse);outline:none;font-family:var(--sans);font-size:1.05rem;padding:0}
+.ec-news-form input::placeholder{color:rgba(250,247,242,.4)}
+.ec-news-submit{flex-shrink:0;width:48px;height:48px;border-radius:50%;border:1px solid rgba(250,247,242,.32);background:none;color:var(--text-inverse);display:flex;align-items:center;justify-content:center;transition:.3s}
+.ec-news-submit:hover{background:var(--text-inverse);color:var(--bg-dark)}
+.ec-news-done{font-family:var(--serif);font-style:italic;font-size:1.3rem;color:rgba(250,247,242,.85)}
+
+/* ---- FOOTER : monumental wordmark ---- */
+.ec-footer{background:var(--bg-dark);color:var(--text-inverse);padding:clamp(3rem,6vw,5rem) clamp(1.2rem,5vw,4.5rem) 2.2rem}
+.ec-footer-word{display:block;width:100%;text-align:left;font-family:var(--serif);font-weight:500;font-size:clamp(3.6rem,17vw,13rem);line-height:.86;letter-spacing:-.025em;color:var(--text-inverse);margin-bottom:clamp(2rem,5vw,3.5rem);padding-bottom:clamp(1.5rem,4vw,3rem);border-bottom:1px solid rgba(250,247,242,.12)}
+.ec-footer-top{display:grid;grid-template-columns:1fr 2fr;gap:3rem;max-width:1440px;margin:0 auto;padding-bottom:2.6rem;border:none}
+.ec-footer-blurb{font-family:var(--serif);font-style:italic;color:rgba(250,247,242,.55);line-height:1.7;font-size:1rem;max-width:30ch}
+.ec-footer-bottom{display:flex;justify-content:space-between;max-width:1440px;margin:1.6rem auto 0;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(250,247,242,.5)}
+
+/* ---- responsive ---- */
+@media(max-width:980px){
+  .ec-hero-grid{grid-template-columns:1fr}
+  .ec-hero-feature{display:none}
+  .ec-story-inner{grid-template-columns:1fr}
+  .ec-story-visual{display:none}
+  .ec-footer-top{grid-template-columns:1fr;gap:2rem}
+}
+@media(max-width:760px){
+  .ec-manifesto{grid-template-columns:1fr;gap:1rem}
+  .ec-manifesto-text{max-width:none}
+  .ec-grid{grid-template-columns:repeat(2,1fr)}
+  .ec-grid .ec-card:nth-child(3n-1){transform:none}
+  .ec-values-grid{grid-template-columns:1fr;gap:2.2rem}
+  .ec-hero-edge{display:none}
+}
+@media(max-width:560px){
+  .ec-header-nav{gap:1.1rem}
+  .ec-header-actions{gap:1.1rem}
+  .ec-grid{grid-template-columns:1fr}
+  .ec-hero-foot{flex-direction:column;align-items:flex-start;gap:1.4rem}
+  .ec-news-form{flex-direction:row}
 }
 `}</style>
   );
