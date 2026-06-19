@@ -243,74 +243,9 @@ p {
   justify-content: center;
 }
 
-/* Scroll-to-explore prompt — a quiet, slowly pulsing invitation. */
-.scroll-prompt {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  margin-top: 48px;
-  font-size: 11px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--silver-dark);
-  animation: scrollPulse 4.5s var(--ease) infinite;
-}
-
-.scroll-prompt .arrow {
-  width: 1px;
-  height: 30px;
-  background: linear-gradient(var(--silver-dark), transparent);
-}
-
-@keyframes scrollPulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
-}
-
-/* ------------------------------- Light Rail ------------------------------- */
-.light-rail {
-  overflow: hidden;
-  background: var(--bg-secondary);
-  border-block: 1px solid var(--border);
-  white-space: nowrap;
-  user-select: none;
-}
-
-.light-rail-track {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  padding-block: 9px;
-  animation: lightRail 38s linear infinite;
-}
-
-.light-rail:hover .light-rail-track {
-  animation-play-state: paused;
-}
-
-.light-rail-item {
-  display: inline-flex;
-  align-items: center;
-  font-size: 12.5px;
-  letter-spacing: 0.6px;
-  color: var(--silver-dark);
-  transition: color var(--t-med) var(--ease);
-}
-
-.light-rail:hover .light-rail-item {
-  color: var(--text-secondary);
-}
-
-.light-rail-item::after {
-  content: "•";
-  margin: 0 26px;
-  color: var(--silver);
-}
-
-@keyframes lightRail {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+.btn-hero {
+  width: auto;
+  padding-inline: 36px;
 }
 
 /* ------------------------------- Value Props ------------------------------ */

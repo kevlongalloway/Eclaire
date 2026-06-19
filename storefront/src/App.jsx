@@ -14,15 +14,6 @@ import {
    Unstyled: plain semantic HTML only (no CSS, no classes, no inline styles).
    ============================================================================ */
 
-/* Repeating facts for the homepage "light rail" info scroller. */
-const LIGHT_RAIL_FACTS = [
-  "Solid 925 Sterling Silver",
-  "Hand-Finished",
-  "Catches Light Differently in Every Room",
-  "Heirloom Weight",
-  "Designed to Last",
-];
-
 /* Demo fallback catalog (used when no API is configured). */
 const MOCK_PRODUCTS = [
   {
@@ -297,21 +288,9 @@ export default function App() {
             Solid 925 sterling silver, hand-finished in the atelier and weighted to last.
             Brilliance, beautifully made.
           </p>
-          <a className="btn btn-primary" style={{ width: "auto" }} href="#shop">Shop the Collection</a>
-          <a className="scroll-prompt" href="#shop" aria-label="Scroll to explore the collection">
-            scroll to explore
-            <span className="arrow" aria-hidden="true" />
-          </a>
+          <a className="btn btn-primary btn-hero" href="#shop">Shop the Collection</a>
         </div>
       </section>
-
-      <div className="light-rail" aria-hidden="true">
-        <div className="light-rail-track">
-          {[...LIGHT_RAIL_FACTS, ...LIGHT_RAIL_FACTS].map((fact, i) => (
-            <span className="light-rail-item" key={i}>{fact}</span>
-          ))}
-        </div>
-      </div>
 
       <main className="container">
         {demo && (
