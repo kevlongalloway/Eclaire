@@ -51,7 +51,10 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; colo
   top: 0;
   height: 100vh;
 }
-.ad-brand { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.6rem; }
+.ad-sidebar-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.ad-brand { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.6rem; flex: 1; min-width: 0; }
+/* Hamburger toggle — only shown on narrow screens (see responsive block). */
+.ad-nav-toggle { display: none; }
 .ad-brand-mark { color: var(--gold); font-size: 1.2rem; }
 .ad-brand-name { font-family: var(--serif); font-size: 1.5rem; font-weight: 500; letter-spacing: 0.02em; }
 .ad-brand-tag {
@@ -154,7 +157,7 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; colo
 .ad-tab.is-active { background: var(--ink); color: #fff; }
 
 /* --------------------------------- tables --------------------------------- */
-.ad-table-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.ad-table-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; overflow-x: auto; box-shadow: var(--shadow); }
 .ad-table { width: 100%; border-collapse: collapse; }
 .ad-table th {
   text-align: left; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft);
@@ -273,10 +276,37 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; colo
 /* ------------------------------- responsive -------------------------------- */
 @media (max-width: 900px) {
   .ad-shell { grid-template-columns: 1fr; }
-  .ad-sidebar { position: static; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap; }
-  .ad-nav { flex-direction: row; flex: 1; }
-  .ad-sidebar-foot { margin: 0; flex-direction: row; align-items: center; }
+
+  /* Sidebar collapses to a top bar; nav, store switcher and account fold into
+     a dropdown toggled by the hamburger button. */
+  .ad-sidebar {
+    position: sticky; top: 0; z-index: 30;
+    height: auto;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 0.9rem 1rem;
+  }
+  .ad-nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; flex: 0 0 auto; border-radius: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.16); background: transparent;
+    color: #e9e8e3; cursor: pointer;
+  }
+  .ad-nav-toggle:hover { background: rgba(255, 255, 255, 0.06); }
+
+  /* Collapsed by default; revealed when the sidebar carries .is-open. */
+  .ad-sidebar .ms-switcher,
+  .ad-sidebar .ad-nav,
+  .ad-sidebar .ad-sidebar-foot { display: none; }
+  .ad-sidebar.is-open .ms-switcher { display: flex; flex-direction: column; margin: 0; }
+  .ad-sidebar.is-open .ad-nav { display: flex; flex-direction: column; flex: none; }
+  .ad-sidebar.is-open .ad-sidebar-foot { display: flex; flex-direction: column; margin: 0; }
   .ad-account { margin: 0; }
+
+  /* Keep table columns (incl. the Edit/Delete actions) reachable by scrolling
+     horizontally instead of clipping them off-screen. */
+  .ad-table { min-width: 640px; }
+
   .ad-grid-2, .ad-order-cols { grid-template-columns: 1fr; }
 }
 
@@ -355,14 +385,6 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; colo
 .ms-check input[type="checkbox"] {
   width: 18px;
   height: 18px;
-}
-
-@media (max-width: 900px) {
-  .ms-switcher {
-    margin: 0 0.5rem 0 0;
-    flex-direction: row;
-    align-items: center;
-  }
 }
 
 /* ===== Variations editor ===== */
