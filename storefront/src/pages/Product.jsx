@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useStore } from "../store.jsx";
-import { formatPrice, getPrimaryImage } from "../api.js";
+import { formatPrice, resolveImageUrl } from "../api.js";
 import ProductCard from "../components/ProductCard.jsx";
 
 export default function Product() {
@@ -28,18 +28,22 @@ export default function Product() {
 function ProductDetail({ group, addToCart, related }) {
   const [length, setLength] = useState(group.defaultLength);
   const [width, setWidth] = useState(group.defaultWidth);
+  const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [activeImg, setActiveImg] = useState(0);
 
   const resolved = group.resolve(length, width);
   const price = resolved && resolved.price != null ? resolved.price : group.price;
   const unavailable = !resolved || resolved.available === false;
-  const img = getPrimaryImage(group);
+  const images = (group.images || []).map(resolveImageUrl).filter(Boolean);
+  const img = images[activeImg] || images[0] || null;
 
   const onSubmit = (e) => {
     e.preventDefault();
     if (unavailable) return;
-    addToCart(group, length, width);
+    addToCart(group, length, width, qty);
     setAdded(true);
+    setQty(1);
     window.setTimeout(() => setAdded(false), 2400);
   };
 
@@ -50,8 +54,30 @@ function ProductDetail({ group, addToCart, related }) {
       </p>
 
       <div className="product-detail">
-        <div className={`product-gallery${img ? "" : " product-media-empty"}`}>
-          {img && <img src={img} alt={`${group.name} — sterling silver catching the light`} />}
+        <div className="pdp-gallery">
+          <div className="pdp-main" style={{ "--swatch": group.swatch }}>
+            {img ? (
+              <img src={img} alt={`${group.name} — sterling silver catching the light`} />
+            ) : (
+              <div className="silver-surface">
+                <span className="mark">925</span>
+              </div>
+            )}
+          </div>
+          {images.length > 1 && (
+            <div className="pdp-thumbs">
+              {images.map((src, i) => (
+                <button
+                  key={src}
+                  type="button"
+                  className={`pdp-thumb${i === activeImg ? " active" : ""}`}
+                  onClick={() => setActiveImg(i)}
+                >
+                  <img src={src} alt={`${group.name} view ${i + 1}`} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="product-info">
@@ -77,6 +103,11 @@ function ProductDetail({ group, addToCart, related }) {
                 </select>
               </label>
             )}
+            <div className="qty pdp-qty">
+              <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Decrease quantity">−</button>
+              <span>{qty}</span>
+              <button type="button" onClick={() => setQty((q) => q + 1)} aria-label="Increase quantity">+</button>
+            </div>
             <button className="btn btn-primary" type="submit" disabled={unavailable}>
               {unavailable ? "Unavailable" : added ? "Added to bag ✓" : "Add to bag"}
             </button>
@@ -91,11 +122,20 @@ function ProductDetail({ group, addToCart, related }) {
             <div><dt>Finish</dt><dd>Hand-finished in the atelier</dd></div>
           </dl>
 
-          <ul className="trust-list">
-            <li>Solid 925 — never plated</li>
-            <li>Hand-finished in the atelier</li>
-            <li>Designed to be worn and loved for years</li>
-          </ul>
+          <div className="trust">
+            <div className="t-row">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+              Solid 925 — never plated
+            </div>
+            <div className="t-row">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+              Hand-finished in the atelier
+            </div>
+            <div className="t-row">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+              Designed to be worn and loved for years
+            </div>
+          </div>
         </div>
       </div>
 

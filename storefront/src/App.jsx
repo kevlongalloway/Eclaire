@@ -6,6 +6,9 @@ import Shop from "./pages/Shop.jsx";
 import Product from "./pages/Product.jsx";
 import Cart from "./pages/Cart.jsx";
 import Story from "./pages/Story.jsx";
+import Journal from "./pages/Journal.jsx";
+import Care from "./pages/Care.jsx";
+import Contact from "./pages/Contact.jsx";
 import OrderStatus from "./pages/OrderStatus.jsx";
 
 /* ============================================================================
@@ -23,6 +26,9 @@ export default function App() {
         <Route path="product/:key" element={<Product />} />
         <Route path="cart" element={<Cart />} />
         <Route path="story" element={<Story />} />
+        <Route path="journal" element={<Journal />} />
+        <Route path="care" element={<Care />} />
+        <Route path="contact" element={<Contact />} />
         <Route path="order" element={<OrderStatus />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
