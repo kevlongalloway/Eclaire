@@ -26,34 +26,28 @@ export default function Cart() {
           </div>
         ) : (
           <>
-            <table className="bag-table">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Options</th>
-                  <th>Quantity</th>
-                  <th>Price</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {cart.map((it) => (
-                  <tr key={it.key}>
-                    <td>{it.name}</td>
-                    <td>{it.length} / {it.width}</td>
-                    <td>
-                      <span className="bag-qty">
-                        <button className="btn-quiet" onClick={() => changeQty(it.key, -1)} aria-label="Decrease quantity">−</button>
-                        {it.qty}
-                        <button className="btn-quiet" onClick={() => changeQty(it.key, 1)} aria-label="Increase quantity">+</button>
-                      </span>
-                    </td>
-                    <td>{formatPrice(it.price * it.qty, it.currency)}</td>
-                    <td><button className="btn-link" onClick={() => removeItem(it.key)}>Remove</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="bag-list">
+              {cart.map((it) => (
+                <div className="bag-row" key={it.key}>
+                  <div className="bag-media" style={{ background: it.swatch || undefined }}>
+                    {it.image && <img src={it.image} alt={it.name} />}
+                  </div>
+                  <div className="bag-info">
+                    <p className="bag-name">{it.name}</p>
+                    <p className="bag-spec">{it.length} · {it.width}</p>
+                    <div className="bag-actions">
+                      <div className="qty">
+                        <button onClick={() => changeQty(it.key, -1)} aria-label="Decrease quantity">−</button>
+                        <span>{it.qty}</span>
+                        <button onClick={() => changeQty(it.key, 1)} aria-label="Increase quantity">+</button>
+                      </div>
+                      <button className="bag-remove" onClick={() => removeItem(it.key)}>Remove</button>
+                    </div>
+                  </div>
+                  <p className="bag-price">{formatPrice(it.price * it.qty, it.currency)}</p>
+                </div>
+              ))}
+            </div>
 
             {!demo && (
               <form className="discount-form" onSubmit={(e) => { e.preventDefault(); applyDiscount(); }}>

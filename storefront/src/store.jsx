@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { api, buildCatalog, API_CONFIGURED } from "./api.js";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import { api, buildCatalog, API_CONFIGURED, getPrimaryImage } from "./api.js";
 
 /* ============================================================================
    Shared store — catalog + cart + checkout state for the whole site.
@@ -63,6 +63,24 @@ export function StoreProvider({ children }) {
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState(null);
 
+  /* Cart drawer (header icon) — independent of the /cart page. */
+  const [cartOpen, setCartOpen] = useState(false);
+  const openCart = useCallback(() => setCartOpen(true), []);
+  const closeCart = useCallback(() => setCartOpen(false), []);
+
+  /* Toast — single global instance, hidden by default. Driven entirely by
+     this timer ref so repeated calls reset the dismiss clock instead of
+     stacking timers (the bug that made the old static prototype's toast
+     look like it "never went away"). */
+  const [toast, setToast] = useState({ message: "", visible: false });
+  const toastTimer = useRef(null);
+  const showToast = useCallback((message) => {
+    clearTimeout(toastTimer.current);
+    setToast({ message, visible: true });
+    toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, visible: false })), 2600);
+  }, []);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
   /* Load catalog once. */
   useEffect(() => {
     let alive = true;
@@ -83,7 +101,7 @@ export function StoreProvider({ children }) {
     return () => { alive = false; };
   }, []);
 
-  const addToCart = useCallback((group, length, width) => {
+  const addToCart = useCallback((group, length, width, qty = 1) => {
     const resolved = group.resolve(length, width);
     if (!resolved || resolved.available === false) return;
     const productId = resolved.productId;
@@ -91,11 +109,15 @@ export function StoreProvider({ children }) {
     const key = `${productId}|${length}|${width}`;
     setCart((c) => {
       const ex = c.find((i) => i.key === key);
-      if (ex) return c.map((i) => (i.key === key ? { ...i, qty: i.qty + 1 } : i));
-      return [...c, { key, productId, name: group.name, length, width, price, currency: group.currency, qty: 1 }];
+      if (ex) return c.map((i) => (i.key === key ? { ...i, qty: i.qty + qty } : i));
+      return [...c, {
+        key, productId, name: group.name, length, width, price, currency: group.currency, qty,
+        image: getPrimaryImage(group), swatch: group.swatch,
+      }];
     });
     setQuote(null); setQuoteError(null);
-  }, []);
+    showToast(`${group.name} added to your bag`);
+  }, [showToast]);
 
   const changeQty = useCallback((key, d) => {
     setCart((c) => c.map((i) => (i.key === key ? { ...i, qty: Math.max(1, i.qty + d) } : i)));
@@ -150,6 +172,8 @@ export function StoreProvider({ children }) {
     code, setCode, quote, quoteError, applyDiscount,
     checkout, checkoutBusy, checkoutError,
     currency, subtotal, total, count,
+    cartOpen, openCart, closeCart,
+    toast, showToast,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
