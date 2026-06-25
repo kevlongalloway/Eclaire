@@ -14,6 +14,9 @@ const NAV = [
 export default function Layout({ children }) {
   const { logout, username, mustChangePassword, dismissPasswordPrompt } = useAuth();
   const [showChange, setShowChange] = useState(false);
+  // Mobile nav dropdown — collapsed by default, toggled by the hamburger.
+  const [navOpen, setNavOpen] = useState(false);
+  const closeNav = () => setNavOpen(false);
 
   function closeChange() {
     setShowChange(false);
@@ -22,11 +25,22 @@ export default function Layout({ children }) {
 
   return (
     <div className="ad-shell">
-      <aside className="ad-sidebar">
-        <div className="ad-brand">
-          <span className="ad-brand-mark">✦</span>
-          <span className="ad-brand-name">Éclaire</span>
-          <span className="ad-brand-tag">Admin</span>
+      <aside className={`ad-sidebar${navOpen ? " is-open" : ""}`}>
+        <div className="ad-sidebar-head">
+          <div className="ad-brand">
+            <span className="ad-brand-mark">✦</span>
+            <span className="ad-brand-name">Éclaire</span>
+            <span className="ad-brand-tag">Admin</span>
+          </div>
+          <button
+            type="button"
+            className="ad-nav-toggle"
+            aria-label={navOpen ? "Close menu" : "Open menu"}
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen((open) => !open)}
+          >
+            {navOpen ? <CloseIcon /> : <MenuIcon />}
+          </button>
         </div>
 
         <StoreSwitcher />
@@ -37,6 +51,7 @@ export default function Layout({ children }) {
               key={item.to}
               to={item.to}
               end={item.end}
+              onClick={closeNav}
               className={({ isActive }) => `ad-nav-link${isActive ? " is-active" : ""}`}
             >
               <item.icon />
@@ -52,7 +67,7 @@ export default function Layout({ children }) {
               <span className="ad-account-name">{username}</span>
             </div>
           )}
-          <button className="ad-nav-link" onClick={() => setShowChange(true)}>
+          <button className="ad-nav-link" onClick={() => { setShowChange(true); closeNav(); }}>
             <KeyIcon />
             <span>Change password</span>
           </button>
@@ -106,6 +121,20 @@ function StoreSwitcher() {
 }
 
 /* ---- inline icons (no dependency) ---- */
+function MenuIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+function CloseIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
 function StoreIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
