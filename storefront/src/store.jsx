@@ -150,8 +150,8 @@ export function StoreProvider({ children }) {
       const origin = window.location.origin;
       const data = await api.createCheckoutSession({
         items,
-        successUrl: `${origin}/order?session_id={CHECKOUT_SESSION_ID}`,
-        cancelUrl: `${origin}/cart`,
+        successUrl: `${origin}/#/order?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${origin}/#/cart`,
         discountCode: quote && quote.valid && quote.discount ? quote.discount.code : undefined,
       });
       window.location.href = data.url;

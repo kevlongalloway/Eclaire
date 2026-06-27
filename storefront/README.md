@@ -4,9 +4,10 @@ A luxury jewelry storefront — a multi-page React app (react-router) wired to t
 **E-commaxxing API** (products, discount codes, Stripe checkout, order
 tracking). Built with Vite and deployable as a **static site on Render**.
 
-Pages each have their own URL: `/` (home), `/shop`, `/product/:key`, `/cart`,
-`/story`, and `/order` (Stripe success page). Deep links rely on the
-`/* → /index.html` rewrite already declared in the root `render.yaml`.
+Pages each have their own URL: `/#/` (home), `/#/shop`, `/#/product/:key`,
+`/#/cart`, `/#/story`, and `/#/order` (Stripe success page). Routing uses
+`HashRouter`, so deep links and refreshes work on any static host without
+needing a server-side rewrite rule.
 
 With no API URL configured it runs in **demo mode** on a bundled mock catalog
 so the site always renders.
