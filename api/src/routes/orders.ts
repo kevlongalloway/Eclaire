@@ -1,21 +1,40 @@
 import { Hono } from "hono";
 import type { Env } from "../types";
 import { nowIso } from "../lib/db";
-import { getOrderWithItems } from "../lib/orders";
+import { createOrderFromSession, getOrderWithItems } from "../lib/orders";
+import { retrieveCheckoutSession } from "../lib/stripe";
 import { fail, ok } from "../lib/response";
 
 /* ----------------------------- public routes ----------------------------- */
 export const publicOrders = new Hono<{ Bindings: Env }>();
 
-// GET /orders?session_id=  — the success page polls this; 404 until the
-// webhook has created the order.
+// GET /orders?session_id=  — the success page polls this. Normally the
+// webhook has already created the order by the time this is called; if not
+// (webhook not configured/delivered yet, e.g. sandbox testing), fall back to
+// asking Stripe directly and create the order here. Idempotent on session_id,
+// so this can't race the webhook into a duplicate.
 publicOrders.get("/", async (c) => {
   const sessionId = c.req.query("session_id");
   if (!sessionId) return fail(c, "`session_id` is required.", 400);
 
-  const order = await c.env.DB.prepare(`SELECT * FROM orders WHERE session_id = ?`)
+  let order = await c.env.DB.prepare(`SELECT * FROM orders WHERE session_id = ?`)
     .bind(sessionId)
     .first();
+
+  if (!order && c.env.STRIPE_SECRET_KEY) {
+    try {
+      const session = await retrieveCheckoutSession(c.env.STRIPE_SECRET_KEY, sessionId);
+      if (session.payment_status === "paid" || session.status === "complete") {
+        const orderId = await createOrderFromSession(c.env, session);
+        if (orderId) {
+          order = await c.env.DB.prepare(`SELECT * FROM orders WHERE id = ?`).bind(orderId).first();
+        }
+      }
+    } catch {
+      // Bad/unknown session id, wrong Stripe mode, etc. — fall through to 404.
+    }
+  }
+
   if (!order) return fail(c, "Order not found yet.", 404);
 
   return ok(c, await getOrderWithItems(c.env, order));
