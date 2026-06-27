@@ -6,7 +6,7 @@ product images. It serves both the public **storefront** and the **admin
 portal**.
 
 - **Public routes** (no auth): products, product images, discount validation,
-  Stripe checkout, and order status.
+  Stripe checkout, and order status/tracking.
 - **Admin routes** (`/admin/*`, bearer-token auth): manage products, images,
   discounts, and orders.
 
@@ -31,7 +31,8 @@ Money is always an **integer in the smallest currency unit** (cents).
 | `POST` | `/discounts/validate` | Quote a cart `{ code?, items:[{productId,price,quantity}] }`. Re-prices server-side and stacks automatic sales. |
 | `POST` | `/checkout/session` | Create a Stripe Checkout Session `{ items:[{productId,quantity}], successUrl, cancelUrl, discountCode? }` → `{ url, sessionId }`. |
 | `GET`  | `/orders?session_id=` | Order created by the Stripe webhook (404 until it fires — the storefront polls). |
-| `POST` | `/webhooks/stripe` | Stripe webhook (verified). Creates the order on `checkout.session.completed`. |
+| `POST` | `/orders/track` | No-account order lookup `{ confirmationNumber, email }` — both must match the same order. Rate-limited per IP (10/min); generic 404 either way so the response never reveals which field was wrong. |
+| `POST` | `/webhooks/stripe` | Stripe webhook (verified). Creates the order on `checkout.session.completed` and sends the confirmation email. |
 
 ### Admin auth (username + password)
 
@@ -89,6 +90,27 @@ token** sent on every other admin request as `Authorization: Bearer <token>`.
 }
 ```
 
+## Order tracking & confirmation email
+
+Every order gets a short, human-friendly `confirmation_number` (e.g.
+`EC-7K2QXM9P`) generated when the Stripe webhook creates it. Customers look up
+status with `POST /orders/track` using **both** the confirmation number and
+the email used at checkout — neither alone is enough, so there's no account
+needed and no realistic way to enumerate other customers' orders. The
+storefront's `/track-order` page (linked from the footer, not the main nav)
+is the UI for this.
+
+The confirmation email is sent via [Resend](https://resend.com): verify your
+sending domain there, create an API key, and set:
+
+```bash
+wrangler secret put RESEND_API_KEY
+wrangler secret put EMAIL_FROM         # e.g. "Éclaire Atelier <orders@yourdomain.com>"
+```
+
+Leave `RESEND_API_KEY` unset to disable sending (a warning is logged instead —
+useful for local dev). Templates live in `src/emails/`.
+
 ## Local development
 
 ```bash
@@ -132,9 +154,12 @@ curl -X POST http://localhost:8787/admin/products \
    wrangler secret put ADMIN_PASSWORD           # initial password (changeable in-app)
    wrangler secret put STRIPE_SECRET_KEY        # optional — enables checkout
    wrangler secret put STRIPE_WEBHOOK_SECRET    # from the Stripe webhook endpoint
+   wrangler secret put RESEND_API_KEY           # optional — enables the order confirmation email
+   wrangler secret put EMAIL_FROM               # e.g. "Éclaire Atelier <orders@yourdomain.com>"
    ```
 3. **Set vars** in `wrangler.toml`: `CORS_ORIGINS` (your storefront + admin
-   origins) and `PUBLIC_BASE_URL` (this worker's URL — used to build image URLs).
+   origins), `PUBLIC_BASE_URL` (this worker's URL — used to build image URLs),
+   and `STOREFRONT_BASE_URL` (used to build the tracking link in emails).
 4. **Migrate + deploy**:
    ```bash
    npm run db:migrate
@@ -157,7 +182,8 @@ api/
 │   ├── index.ts               # app: CORS, route mounting, auth, errors
 │   ├── types.ts               # Env bindings + shared types
 │   ├── middleware/auth.ts     # admin bearer-token guard
-│   ├── lib/                   # response envelope, ids, db parsers, discounts, stripe, orders
+│   ├── lib/                   # response envelope, ids, db parsers, discounts, stripe, orders, email, rate limiting
+│   ├── emails/                # transactional email templates (HTML + text)
 │   └── routes/                # products, images, discounts, checkout, orders, webhooks
 └── wrangler.toml
 ```

@@ -105,6 +105,13 @@ export const api = {
     }
     return body.data;
   },
+
+  /* POST /orders/track — no-account lookup by confirmation number + email. */
+  trackOrder: (confirmationNumber, email) =>
+    request(`/orders/track`, {
+      method: "POST",
+      body: JSON.stringify({ confirmationNumber, email }),
+    }),
 };
 
 /* Poll for an order created by the Stripe webhook (success page). */

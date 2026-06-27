@@ -3,6 +3,7 @@ import type { Env } from "../types";
 import { nowIso } from "../lib/db";
 import { getOrderWithItems } from "../lib/orders";
 import { fail, ok } from "../lib/response";
+import { checkRateLimit, clientIp } from "../lib/rateLimit";
 
 /* ----------------------------- public routes ----------------------------- */
 export const publicOrders = new Hono<{ Bindings: Env }>();
@@ -20,6 +21,39 @@ publicOrders.get("/", async (c) => {
 
   return ok(c, await getOrderWithItems(c.env, order));
 });
+
+// POST /orders/track  { confirmationNumber, email } — the no-account lookup
+// customers reach from the footer. Both fields must match the same order, or
+// we return the same generic 404 either way — never reveal which one missed.
+publicOrders.post("/track", async (c) => {
+  const allowed = await checkRateLimit(c.env, clientIp(c), 10);
+  if (!allowed) return fail(c, "Too many attempts. Please try again in a minute.", 429);
+
+  const body = await c.req.json().catch(() => null);
+  if (!body || typeof body !== "object") return fail(c, "Invalid JSON body.");
+
+  const confirmationNumber = normalizeConfirmationNumber(String(body.confirmationNumber ?? ""));
+  const email = String(body.email ?? "").trim().toLowerCase();
+  if (!confirmationNumber || !email) {
+    return fail(c, "Order number and email are both required.");
+  }
+
+  const order = await c.env.DB.prepare(
+    `SELECT * FROM orders WHERE confirmation_number = ? AND LOWER(customer_email) = ?`,
+  )
+    .bind(confirmationNumber, email)
+    .first();
+  if (!order) return fail(c, "We couldn't find an order matching those details.", 404);
+
+  return ok(c, await getOrderWithItems(c.env, order));
+});
+
+// Accepts "EC-7K2QXM9P", "7k2qxm9p", or "ec 7k2qxm9p" and normalizes to the
+// stored "EC-XXXXXXXX" form so minor formatting differences don't 404.
+function normalizeConfirmationNumber(raw: string): string {
+  const cleaned = raw.trim().toUpperCase().replace(/^EC[-\s]?/, "").replace(/[^A-Z0-9]/g, "");
+  return cleaned ? `EC-${cleaned}` : "";
+}
 
 /* ------------------------------ admin routes ------------------------------ */
 export const adminOrders = new Hono<{ Bindings: Env }>();

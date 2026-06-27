@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "../types";
 import { constructWebhookEvent, retrieveCheckoutSession } from "../lib/stripe";
 import { createOrderFromSession } from "../lib/orders";
+import { sendOrderConfirmationEmail } from "../lib/email";
 
 export const webhooks = new Hono<{ Bindings: Env }>();
 
@@ -29,7 +30,17 @@ webhooks.post("/stripe", async (c) => {
       // Re-fetch with line items + customer details expanded.
       const full = await retrieveCheckoutSession(stripeKey, event.data.object.id);
       if (full.payment_status === "paid" || full.status === "complete") {
-        await createOrderFromSession(c.env, full);
+        const result = await createOrderFromSession(c.env, full);
+        if (result?.isNew) {
+          const order = await c.env.DB.prepare(`SELECT * FROM orders WHERE id = ?`).bind(result.id).first();
+          // Email failures shouldn't fail the webhook — the order is already
+          // created, and a 500 here would just make Stripe retry pointlessly.
+          if (order) {
+            await sendOrderConfirmationEmail(c.env, order).catch((e) =>
+              console.error("Order confirmation email failed:", e),
+            );
+          }
+        }
       }
     }
   } catch (e) {
