@@ -6,7 +6,8 @@ compatibility_flags = ["nodejs_compat"]
 # ---------------------------------------------------------------------------
 # Public configuration (non-secret). Secrets live in .dev.vars (local) and
 # the Cloudflare dashboard / `wrangler secret put` (production):
-# ADMIN_USERNAME, ADMIN_PASSWORD, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET.
+# ADMIN_USERNAME, ADMIN_PASSWORD, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
+# RESEND_API_KEY, EMAIL_FROM, EMAIL_REPLY_TO.
 # ---------------------------------------------------------------------------
 [vars]
 # Comma-separated list of allowed CORS origins, or "*" to allow any.
@@ -14,6 +15,9 @@ CORS_ORIGINS = "*"
 # Public base URL of THIS worker (no trailing slash). Used to build absolute
 # image URLs returned to clients. Override per-environment.
 PUBLIC_BASE_URL = "http://localhost:8787"
+# Public base URL of the storefront (no trailing slash). Used to build the
+# "Track Your Order" link in the confirmation email. Override per-environment.
+STOREFRONT_BASE_URL = "http://localhost:5173"
 
 # ---------------------------------------------------------------------------
 # D1 — relational store for products, discounts, orders.
@@ -40,7 +44,7 @@ preview_bucket_name = "eclaire-media"
 # Deploy with:  wrangler deploy --env production
 # ---------------------------------------------------------------------------
 [env.production]
-vars = { CORS_ORIGINS = "https://eclaire.onrender.com,https://eclaire-admin.onrender.com", PUBLIC_BASE_URL = "https://eclaire-api.your-subdomain.workers.dev" }
+vars = { CORS_ORIGINS = "https://eclaire.onrender.com,https://eclaire-admin.onrender.com", PUBLIC_BASE_URL = "https://eclaire-api.your-subdomain.workers.dev", STOREFRONT_BASE_URL = "https://eclaire.onrender.com" }
 
 [[env.production.d1_databases]]
 binding = "DB"

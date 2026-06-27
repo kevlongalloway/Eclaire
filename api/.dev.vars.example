@@ -13,3 +13,10 @@ ADMIN_PASSWORD=change-me-please
 # checkout (the storefront then stays in demo mode).
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
+
+# Resend (https://resend.com) — sends the order confirmation email. Create an
+# API key after verifying your sending domain. Leave RESEND_API_KEY blank to
+# disable sending (a warning is logged instead).
+RESEND_API_KEY=
+EMAIL_FROM=Éclaire Atelier <orders@your-verified-domain.com>
+EMAIL_REPLY_TO=

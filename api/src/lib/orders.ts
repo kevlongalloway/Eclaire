@@ -1,4 +1,4 @@
-import { newId } from "./id";
+import { newId, newConfirmationNumber } from "./id";
 import { nowIso } from "./db";
 import type { Env } from "../types";
 
@@ -6,16 +6,22 @@ import type { Env } from "../types";
  * Creates an order (+ line items) from a completed Stripe Checkout Session and
  * decrements stock. Idempotent on session id — a replayed webhook is a no-op.
  * The `session` is the expanded Stripe object (line_items, customer_details).
+ * `isNew` tells the caller whether to send a confirmation email — it must be
+ * false on a replayed webhook, or the customer gets duplicate emails.
  */
-export async function createOrderFromSession(env: Env, session: any): Promise<string | null> {
+export async function createOrderFromSession(
+  env: Env,
+  session: any,
+): Promise<{ id: string; isNew: boolean } | null> {
   const sessionId: string = session.id;
 
   const existing = await env.DB.prepare(`SELECT id FROM orders WHERE session_id = ?`)
     .bind(sessionId)
     .first<{ id: string }>();
-  if (existing) return existing.id;
+  if (existing) return { id: existing.id, isNew: false };
 
   const orderId = newId("order");
+  const confirmationNumber = newConfirmationNumber();
   const now = nowIso();
 
   const shipping = session.shipping_details || session.customer_details || {};
@@ -72,8 +78,8 @@ export async function createOrderFromSession(env: Env, session: any): Promise<st
       `INSERT INTO orders (id, session_id, payment_intent, status, fulfillment_status, customer_email,
         amount_subtotal, amount_discount, amount_total, currency, discount_code,
         shipping_name, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state,
-        shipping_postal_code, shipping_country, store_id, created_at, updated_at)
-       VALUES (?, ?, ?, 'paid', 'unfulfilled', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        shipping_postal_code, shipping_country, store_id, confirmation_number, created_at, updated_at)
+       VALUES (?, ?, ?, 'paid', 'unfulfilled', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).bind(
       orderId,
       sessionId,
@@ -92,6 +98,7 @@ export async function createOrderFromSession(env: Env, session: any): Promise<st
       addr.postal_code ?? null,
       addr.country ?? null,
       storeId,
+      confirmationNumber,
       now,
       now,
     ),
@@ -116,7 +123,7 @@ export async function createOrderFromSession(env: Env, session: any): Promise<st
   }
 
   await env.DB.batch(statements);
-  return orderId;
+  return { id: orderId, isNew: true };
 }
 
 /** Assemble the public order view (order + items) the success page renders. */

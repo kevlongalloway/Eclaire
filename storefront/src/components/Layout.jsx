@@ -190,6 +190,7 @@ export default function Layout() {
             <Link to="/care">Shipping & Care</Link>
             <Link to="/care">Returns</Link>
             <Link to="/contact">Get in Touch</Link>
+            <Link to="/track-order">Track Your Order</Link>
           </div>
         </div>
         <div className="footer-bottom">

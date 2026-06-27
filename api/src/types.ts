@@ -7,11 +7,16 @@ export interface Env {
   // vars
   CORS_ORIGINS: string;
   PUBLIC_BASE_URL: string;
+  STOREFRONT_BASE_URL?: string;
   // secrets — admin login credentials (set in the Cloudflare dashboard)
   ADMIN_USERNAME: string;
   ADMIN_PASSWORD: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
+  // secrets — transactional email (Resend). Leave blank to disable sending.
+  RESEND_API_KEY?: string;
+  EMAIL_FROM?: string;
+  EMAIL_REPLY_TO?: string;
 }
 
 /** Per-request values set by middleware (the authenticated admin session). */

@@ -10,6 +10,7 @@ import Journal from "./pages/Journal.jsx";
 import Care from "./pages/Care.jsx";
 import Contact from "./pages/Contact.jsx";
 import OrderStatus from "./pages/OrderStatus.jsx";
+import TrackOrder from "./pages/TrackOrder.jsx";
 
 /* ============================================================================
    Éclaire Atelier — storefront routes.
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="care" element={<Care />} />
         <Route path="contact" element={<Contact />} />
         <Route path="order" element={<OrderStatus />} />
+        <Route path="track-order" element={<TrackOrder />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
