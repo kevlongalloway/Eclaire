@@ -17,7 +17,10 @@ import { useMemo, useState } from "react";
    falls through to the "Additional fields" / raw editors and is preserved. */
 const DISPLAY_KEYS = ["collection", "metal", "weight", "swatch", "tag"];
 const VARIATION_KEYS = ["lengths", "widths", "default_length", "default_width"];
-const MANAGED_KEYS = new Set([...DISPLAY_KEYS, ...VARIATION_KEYS]);
+/* Pattern B variant-linkage keys — owned by ProductForm's VariantPricing
+   section, not surfaced here (it writes/reads them directly on submit). */
+const VARIANT_LINK_KEYS = ["base_product", "base_label", "length", "width"];
+const MANAGED_KEYS = new Set([...DISPLAY_KEYS, ...VARIATION_KEYS, ...VARIANT_LINK_KEYS]);
 
 const TAG_SUGGESTIONS = ["Bestseller", "New", "None"];
 const DEFAULT_SWATCH = "#C8CCD2";
