@@ -463,6 +463,23 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; colo
 .ad-kv-val { flex: 1; min-width: 0; }
 .ad-kv-key:focus, .ad-kv-val:focus { outline: none; border-color: var(--gold); }
 
+/* Per-size pricing matrix */
+.ad-vprice-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; }
+.ad-vprice-toggle input { width: auto; transform: scale(1.15); }
+.ad-vprice-table-wrap { margin-top: 0.7rem; }
+.ad-vprice-table { width: 100%; border-collapse: collapse; }
+.ad-vprice-table th {
+  text-align: left; font-size: 0.72rem; font-weight: 600; color: var(--ink-soft);
+  padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--line);
+}
+.ad-vprice-table td { padding: 0.3rem 0.5rem; vertical-align: middle; }
+.ad-vprice-table td input {
+  padding: 0.4rem 0.55rem; border: 1px solid var(--line-strong); border-radius: 8px;
+  background: var(--surface); font: inherit; width: 100%; max-width: 110px;
+}
+.ad-vprice-table td .ad-input-prefix input { border: none; max-width: none; }
+.ad-vprice-table-wrap .ad-hint { display: block; margin-top: 0.5rem; }
+
 /* Raw JSON escape hatch */
 .ad-raw-toggle {
   border: none; background: none; cursor: pointer; padding: 0;
