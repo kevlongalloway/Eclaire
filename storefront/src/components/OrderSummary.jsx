@@ -1,14 +1,34 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { formatPrice, trackingUrl } from "../api.js";
 
 /* Shared order details block — used by the post-checkout success page and
    the no-account "Track Your Order" lookup. */
 export default function OrderSummary({ order }) {
+  const trackHref =
+    order.confirmation_number && order.customer_email
+      ? `/track-order?${new URLSearchParams({
+          confirmation: order.confirmation_number,
+          email: order.customer_email,
+        }).toString()}`
+      : null;
+
   return (
     <article>
+      {order.confirmation_number && (
+        <p className="notice order-confirmation-number">
+          Your order number is <strong>{order.confirmation_number}</strong> — save this and your
+          email to look up your order later.
+        </p>
+      )}
       <p>Status: {order.status}</p>
       <p>Fulfillment: {order.fulfillment_status}</p>
       {order.customer_email && <p>A confirmation was sent to {order.customer_email}.</p>}
+      {trackHref && (
+        <p>
+          <Link to={trackHref}>Track this order</Link>
+        </p>
+      )}
       <h3>Items</h3>
       <ul>
         {(order.items || []).map((it, i) => (
