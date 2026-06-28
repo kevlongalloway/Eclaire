@@ -23,8 +23,11 @@ publicOrders.get("/", async (c) => {
 });
 
 // POST /orders/track  { confirmationNumber, email } — the no-account lookup
-// customers reach from the footer. Both fields must match the same order, or
-// we return the same generic 404 either way — never reveal which one missed.
+// customers reach from the footer. Either field alone is enough (temporary,
+// while confirmation emails are unreliable); when both are given they must
+// match the same order. Email-only matches the most recent order for that
+// address. We return the same generic 404 in every miss case — never reveal
+// which field was wrong.
 publicOrders.post("/track", async (c) => {
   const allowed = await checkRateLimit(c.env, clientIp(c), 10);
   if (!allowed) return fail(c, "Too many attempts. Please try again in a minute.", 429);
@@ -34,14 +37,25 @@ publicOrders.post("/track", async (c) => {
 
   const confirmationNumber = normalizeConfirmationNumber(String(body.confirmationNumber ?? ""));
   const email = String(body.email ?? "").trim().toLowerCase();
-  if (!confirmationNumber || !email) {
-    return fail(c, "Order number and email are both required.");
+  if (!confirmationNumber && !email) {
+    return fail(c, "Enter your order number or the email used at checkout.");
+  }
+
+  const where: string[] = [];
+  const binds: unknown[] = [];
+  if (confirmationNumber) {
+    where.push("confirmation_number = ?");
+    binds.push(confirmationNumber);
+  }
+  if (email) {
+    where.push("LOWER(customer_email) = ?");
+    binds.push(email);
   }
 
   const order = await c.env.DB.prepare(
-    `SELECT * FROM orders WHERE confirmation_number = ? AND LOWER(customer_email) = ?`,
+    `SELECT * FROM orders WHERE ${where.join(" AND ")} ORDER BY created_at DESC LIMIT 1`,
   )
-    .bind(confirmationNumber, email)
+    .bind(...binds)
     .first();
   if (!order) return fail(c, "We couldn't find an order matching those details.", 404);
 

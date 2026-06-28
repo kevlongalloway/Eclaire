@@ -4,7 +4,10 @@ import { api } from "../api.js";
 import OrderSummary from "../components/OrderSummary.jsx";
 
 /* No-account order lookup — reached from the footer, not the main nav.
-   A confirmation-email link can prefill both fields via ?confirmation=&email=. */
+   A confirmation link can prefill both fields via ?confirmation=&email=.
+   Either field alone is enough for now (temporary, while confirmation
+   emails are unreliable) — tighten back to requiring both once email is
+   confirmed working. */
 export default function TrackOrder() {
   const [params] = useSearchParams();
   const [confirmationNumber, setConfirmationNumber] = useState(params.get("confirmation") || "");
@@ -15,6 +18,10 @@ export default function TrackOrder() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (!confirmationNumber.trim() && !email.trim()) {
+      setError("Enter your order number or the email used at checkout.");
+      return;
+    }
     setLoading(true);
     setError(null);
     setOrder(null);
@@ -32,9 +39,10 @@ export default function TrackOrder() {
     <main className="container order-status">
       <span className="label label--dot">Éclaire Atelier</span>
       <h1>Track Your Order</h1>
-      <h2>Enter your order number and email</h2>
+      <h2>Enter your order number, your email, or both</h2>
       <p>
         Find your order number in your confirmation email — it looks like <strong>EC-XXXXXXXX</strong>.
+        No email yet? The email you checked out with works on its own too.
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -42,7 +50,6 @@ export default function TrackOrder() {
           Order number
           <input
             type="text"
-            required
             placeholder="EC-7K2QXM9P"
             value={confirmationNumber}
             onChange={(e) => setConfirmationNumber(e.target.value)}
@@ -52,7 +59,6 @@ export default function TrackOrder() {
           Email
           <input
             type="email"
-            required
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
